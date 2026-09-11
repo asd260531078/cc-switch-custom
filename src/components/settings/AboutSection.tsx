@@ -447,13 +447,13 @@ export function AboutSection({ isPortable }: AboutSectionProps) {
 
       if (!displayVersion) {
         await settingsApi.openExternal(
-          "https://github.com/farion1231/cc-switch/releases",
+          "https://github.com/asd260531078/cc-switch-custom/releases",
         );
         return;
       }
 
       await settingsApi.openExternal(
-        `https://github.com/farion1231/cc-switch/releases/tag/${displayVersion}`,
+        `https://github.com/asd260531078/cc-switch-custom/releases/tag/${displayVersion}`,
       );
     } catch (error) {
       console.error("[AboutSection] Failed to open release notes", error);
@@ -918,7 +918,7 @@ export function AboutSection({ isPortable }: AboutSectionProps) {
               size="sm"
               onClick={() =>
                 settingsApi.openExternal(
-                  "https://github.com/farion1231/cc-switch",
+                  "https://github.com/asd260531078/cc-switch-custom",
                 )
               }
               className="h-8 gap-1.5 text-xs"

@@ -1975,7 +1975,7 @@
     "checking": "Checking for available updates…",
     "updateAvailable": "Version v{{version}} is available; upgrading will let you continue.",
     "incompatibleTitle": "Upgrading won't fix this",
-    "incompatibleDescription": "You are already on the latest version, but the database (v{{db}}) is still newer than this app supports (v{{supported}}). It was likely created by a third-party client or a newer build, so upgrading the official app cannot make it compatible.",
+    "incompatibleDescription": "You are already on the latest version, but the database (v{{db}}) is still newer than this app supports (v{{supported}}). It was likely created by a third-party client or a newer build, so upgrading the current app cannot make it compatible.",
     "preparing": "Preparing update…",
     "downloading": "Downloading update…",
     "upgradeNow": "Upgrade app",

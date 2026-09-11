@@ -16,17 +16,17 @@ jobs:
   release:
     runs-on: ${{ matrix.os }}
     environment: release
+    timeout-minutes: 90
+    env:
+      APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
     strategy:
       fail-fast: false
       matrix:
         include:
           - os: windows-2022
-          - os: windows-11-arm
-            arch: arm64
-          - os: ubuntu-22.04
-          - os: ubuntu-22.04-arm
-            arch: arm64
+            arch: x86_64
           - os: macos-14
+            arch: universal
 
     steps:
       - name: Checkout
@@ -124,62 +124,23 @@ jobs:
 
       - name: Prepare Tauri signing key
         shell: bash
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: |
-          # 调试：检查 Secret 是否存在
-          if [ -z "${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}" ]; then
-            echo "❌ TAURI_SIGNING_PRIVATE_KEY Secret 为空或不存在" >&2
-            echo "请检查 GitHub 仓库 Settings > Secrets and variables > Actions" >&2
-            exit 1
-          fi
-          
-          RAW="${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}"
-          # 目标：提供正确的私钥“文件路径”给 Tauri CLI，避免内容解码歧义
-          KEY_PATH="$RUNNER_TEMP/tauri_signing.key"
-          # 情况 1：原始两行文本（第一行以 "untrusted comment:" 开头）
-          if echo "$RAW" | head -n1 | grep -q '^untrusted comment:'; then
-            printf '%s\n' "$RAW" > "$KEY_PATH"
-            echo "✅ 使用原始两行密钥文件格式"
-          else
-            # 情况 2：整体被 base64 包裹（解包后应当是两行）
-            if DECODED=$(printf '%s' "$RAW" | (base64 --decode 2>/dev/null || base64 -D 2>/dev/null)) \
-               && echo "$DECODED" | head -n1 | grep -q '^untrusted comment:'; then
-              printf '%s\n' "$DECODED" > "$KEY_PATH"
-              echo "✅ 成功解码 base64 包裹密钥，已还原为两行文件"
-            else
-              # 情况 3：已是第二行（纯 Base64 一行）→ 构造两行文件
-              if echo "$RAW" | grep -Eq '^[A-Za-z0-9+/=]+$'; then
-                ONE=$(printf '%s' "$RAW" | tr -d '\r\n')
-                printf '%s\n%s\n' "untrusted comment: tauri signing key" "$ONE" > "$KEY_PATH"
-                echo "✅ 使用一行 Base64 私钥，已构造两行文件"
-              else
-                echo "❌ TAURI_SIGNING_PRIVATE_KEY 格式无法识别：既不是两行原文，也不是其 base64，亦非一行 base64" >&2
-                echo "密钥前10个字符: $(echo "$RAW" | head -c 10)..." >&2
-                exit 1
-              fi
-            fi
-          fi
-          # 将“完整两行内容”作为环境变量注入（Tauri 支持传入完整私钥文本或文件路径）
-          # 使用多行写入语法，保持换行以便解析
-          # 将完整两行私钥内容进行 base64 编码，作为单行内容注入环境变量
-          if command -v base64 >/dev/null 2>&1; then
-            KEY_B64=$(base64 < "$KEY_PATH" | tr -d '\r\n')
-          elif command -v openssl >/dev/null 2>&1; then
-            KEY_B64=$(openssl base64 -A -in "$KEY_PATH")
-          else
-            KEY_B64=$(KEY_PATH="$KEY_PATH" node -e "process.stdout.write(require('fs').readFileSync(process.env.KEY_PATH).toString('base64'))")
-          fi
-          if [ -z "$KEY_B64" ]; then
-            echo "❌ 无法生成私钥 base64 内容" >&2
-            exit 1
-          fi
-          echo "TAURI_SIGNING_PRIVATE_KEY=$KEY_B64" >> "$GITHUB_ENV"
-          if [ -n "${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}" ]; then
-            echo "TAURI_SIGNING_PRIVATE_KEY_PASSWORD=${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}" >> $GITHUB_ENV
-          fi
-          echo "✅ Tauri signing key prepared"
+          set -euo pipefail
+          test -n "$TAURI_SIGNING_PRIVATE_KEY"
+          # This repository stores the single-line base64 key emitted by tauri signer generate.
+          [[ "$TAURI_SIGNING_PRIVATE_KEY" != *$'\n'* ]]
+          echo "TAURI_SIGNING_PRIVATE_KEY=$TAURI_SIGNING_PRIVATE_KEY" >> "$GITHUB_ENV"
+          echo "TAURI_SIGNING_PRIVATE_KEY_PASSWORD=$TAURI_SIGNING_PRIVATE_KEY_PASSWORD" >> "$GITHUB_ENV"
+
+      - name: Use ad-hoc macOS signing when no Apple certificate is configured
+        if: runner.os == 'macOS' && env.APPLE_CERTIFICATE == ''
+        run: echo 'APPLE_SIGNING_IDENTITY=-' >> "$GITHUB_ENV"
 
       - name: Import Apple signing certificate
-        if: runner.os == 'macOS'
+        if: runner.os == 'macOS' && env.APPLE_CERTIFICATE != ''
         shell: bash
         run: |
           set -euo pipefail
@@ -231,10 +192,13 @@ jobs:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
           set -euo pipefail
+          if [ -z "$APPLE_CERTIFICATE" ]; then
+            unset APPLE_ID APPLE_PASSWORD APPLE_TEAM_ID
+          fi
           max_attempts=3
           for attempt in $(seq 1 "$max_attempts"); do
             echo "=== macOS build/notarization attempt ${attempt}/${max_attempts} ==="
-            if pnpm tauri build --target universal-apple-darwin; then
+            if pnpm tauri build --target universal-apple-darwin --bundles app,dmg -- --locked; then
               echo "✅ macOS build/notarization succeeded"
               exit 0
             fi
@@ -259,7 +223,7 @@ jobs:
           if ($env:WINDOWS_RELEASE_ARCH -eq 'arm64') {
             pnpm tauri build --target aarch64-pc-windows-msvc --bundles msi
           } else {
-            pnpm tauri build
+            pnpm tauri build --bundles msi -- --locked
           }
 
       - name: Build Tauri App (Linux)
@@ -297,8 +261,9 @@ jobs:
           fi
 
           # Staple notarization ticket to .app (Tauri already notarized it)
-          xcrun stapler staple "$APP_PATH"
-          echo "✅ .app stapled"
+          if [ -n "$APPLE_CERTIFICATE" ]; then
+            xcrun stapler staple "$APP_PATH"
+          fi
 
           # 1) Collect .tar.gz (updater artifact)
           NEW_TAR_GZ="CC-Switch-${VERSION}-macOS.tar.gz"
@@ -311,38 +276,45 @@ jobs:
           ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "release-assets/$NEW_ZIP"
           echo "macOS zip ready: $NEW_ZIP"
 
-          # 3) Create styled DMG with create-dmg (Tauri's built-in DMG styling doesn't work on CI)
-          if [ -z "${APPLE_SIGNING_IDENTITY:-}" ]; then
-            echo "❌ APPLE_SIGNING_IDENTITY is missing before DMG creation" >&2
-            exit 1
+          if [ -z "$APPLE_CERTIFICATE" ]; then
+            DMG_PATH=$(find src-tauri/target/universal-apple-darwin/release/bundle/dmg -name '*.dmg' -type f -print -quit)
+            test -n "$DMG_PATH"
+            cp "$DMG_PATH" "release-assets/CC-Switch-${VERSION}-macOS.dmg"
+          else
+            # 3) Create styled DMG with create-dmg (Tauri's built-in DMG styling doesn't work on CI)
+            if [ -z "${APPLE_SIGNING_IDENTITY:-}" ]; then
+              echo "❌ APPLE_SIGNING_IDENTITY is missing before DMG creation" >&2
+              exit 1
+            fi
+
+            HOMEBREW_NO_AUTO_UPDATE=1 brew install create-dmg
+            NEW_DMG="CC-Switch-${VERSION}-macOS.dmg"
+            DMG_STAGE_DIR="$RUNNER_TEMP/dmg-stage"
+            rm -rf "$DMG_STAGE_DIR"
+            mkdir -p "$DMG_STAGE_DIR"
+            ditto "$APP_PATH" "$DMG_STAGE_DIR/CC Switch.app"
+
+            create-dmg \
+              --volname "CC Switch" \
+              --background "src-tauri/icons/dmg-background.png" \
+              --window-size 660 400 \
+              --window-pos 200 120 \
+              --icon-size 80 \
+              --icon "CC Switch.app" 180 220 \
+              --hide-extension "CC Switch.app" \
+              --app-drop-link 480 220 \
+              --codesign "$APPLE_SIGNING_IDENTITY" \
+              --no-internet-enable \
+              "release-assets/$NEW_DMG" \
+              "$DMG_STAGE_DIR"
+
+            rm -rf "$DMG_STAGE_DIR"
+            echo "✅ Styled DMG created: $NEW_DMG"
+
           fi
 
-          HOMEBREW_NO_AUTO_UPDATE=1 brew install create-dmg
-          NEW_DMG="CC-Switch-${VERSION}-macOS.dmg"
-          DMG_STAGE_DIR="$RUNNER_TEMP/dmg-stage"
-          rm -rf "$DMG_STAGE_DIR"
-          mkdir -p "$DMG_STAGE_DIR"
-          ditto "$APP_PATH" "$DMG_STAGE_DIR/CC Switch.app"
-
-          create-dmg \
-            --volname "CC Switch" \
-            --background "src-tauri/icons/dmg-background.png" \
-            --window-size 660 400 \
-            --window-pos 200 120 \
-            --icon-size 80 \
-            --icon "CC Switch.app" 180 220 \
-            --hide-extension "CC Switch.app" \
-            --app-drop-link 480 220 \
-            --codesign "$APPLE_SIGNING_IDENTITY" \
-            --no-internet-enable \
-            "release-assets/$NEW_DMG" \
-            "$DMG_STAGE_DIR"
-
-          rm -rf "$DMG_STAGE_DIR"
-          echo "✅ Styled DMG created: $NEW_DMG"
-
       - name: Notarize macOS DMG
-        if: runner.os == 'macOS'
+        if: runner.os == 'macOS' && env.APPLE_CERTIFICATE != ''
         shell: bash
         timeout-minutes: 30
         env:
@@ -408,6 +380,20 @@ jobs:
           echo "=== Verifying .app: $APP_PATH ==="
           codesign --verify --deep --strict --verbose=2 "$APP_PATH"
           echo "✅ codesign verification passed"
+          lipo -verify_arch arm64 x86_64 "$APP_PATH/Contents/MacOS/cc-switch"
+          if [ -z "$APPLE_CERTIFICATE" ]; then
+            DMG_PATH=$(find release-assets -maxdepth 1 -name '*.dmg' -type f -print -quit)
+            test -n "$DMG_PATH"
+            hdiutil verify "$DMG_PATH"
+            MOUNT_PATH="$RUNNER_TEMP/cc-switch-dmg-check"
+            mkdir -p "$MOUNT_PATH"
+            hdiutil attach "$DMG_PATH" -readonly -nobrowse -mountpoint "$MOUNT_PATH"
+            trap 'hdiutil detach "$MOUNT_PATH"' EXIT
+            codesign --verify --deep --strict --verbose=2 "$MOUNT_PATH/CC Switch.app"
+            lipo -verify_arch arm64 x86_64 "$MOUNT_PATH/CC Switch.app/Contents/MacOS/cc-switch"
+            echo "Ad-hoc signature, DMG integrity and universal architectures verified; not Apple notarized."
+            exit 0
+          fi
           spctl -a -t exec -vv "$APP_PATH"
           echo "✅ spctl assessment passed"
           xcrun stapler validate "$APP_PATH"
@@ -458,12 +444,12 @@ jobs:
             } elseif ($isArm64) {
               throw "Signature not found for $($msi.Name)"
             } else {
-              Write-Warning "Signature not found for $($msi.Name)"
+              throw "Signature not found for $($msi.Name)"
             }
           } elseif ($isArm64) {
             throw 'No Windows ARM64 MSI installer found'
           } else {
-            Write-Warning 'No Windows MSI installer found'
+            throw 'No Windows MSI installer found'
           }
 
           # 绿色版（portable）：仅可执行文件打 zip（不参与 Updater）
@@ -551,6 +537,16 @@ jobs:
           echo "Collected signatures (if any alongside artifacts):"
           ls -la release-assets/*.sig || echo "No signatures found"
 
+      - name: Record checksums
+        shell: bash
+        run: |
+          python - <<'PYHASH'
+          import hashlib, pathlib
+          folder = pathlib.Path('release-assets')
+          lines = [hashlib.sha256(p.read_bytes()).hexdigest() + '  ' + p.name for p in sorted(folder.iterdir()) if p.is_file()]
+          (folder / 'SHA256SUMS-${{ runner.os }}.txt').write_text('\n'.join(lines) + '\n')
+          PYHASH
+
       - name: Upload release artifacts to workflow
         uses: actions/upload-artifact@v7
         with:
@@ -600,27 +596,20 @@ jobs:
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.ref_name }}
-          name: CC Switch ${{ github.ref_name }}
-          prerelease: true
+          name: CC Switch Custom ${{ github.ref_name }}
+          draft: true
+          prerelease: false
           body: |
-            ## CC Switch ${{ github.ref_name }}
+            基于官方 CC Switch v3.20.2 的定制版，包含 Claude Desktop 一键导入修复及仓库赞助宣传移除。
 
-            🌐 **Only Official Website / 唯一官方网站 / 唯一の公式サイト**: [ccswitch.io](https://ccswitch.io)
+            - macOS 12+（Apple Silicon / Intel）：下载 `CC-Switch-${{ github.ref_name }}-macOS.dmg`。
+            - Windows 10/11 64 位：下载 `CC-Switch-${{ github.ref_name }}-Windows.msi`；绿色版使用 `Windows-Portable.zip`。
+            - `.tar.gz`、`.sig`、`latest.json` 用于应用更新，普通安装无需下载。
 
-            Claude Code 供应商切换工具
-
-            ### 下载
-
-            - **macOS**: `CC-Switch-${{ github.ref_name }}-macOS.dmg`（推荐）或 `CC-Switch-${{ github.ref_name }}-macOS.zip`（解压即用）
-            - **Windows (x86_64)**: `CC-Switch-${{ github.ref_name }}-Windows.msi`（安装版）或 `CC-Switch-${{ github.ref_name }}-Windows-Portable.zip`（绿色版）
-            - **Windows (ARM64)**: `CC-Switch-${{ github.ref_name }}-Windows-arm64.msi`（安装版）或 `CC-Switch-${{ github.ref_name }}-Windows-arm64-Portable.zip`（绿色版）
-            - **Linux (x86_64)**: `CC-Switch-${{ github.ref_name }}-Linux-x86_64.AppImage` / `.deb` / `.rpm`
-            - **Linux (ARM64)**: `CC-Switch-${{ github.ref_name }}-Linux-arm64.AppImage` / `.deb` / `.rpm`
-
-            > `.tar.gz` 为 Tauri updater 自动更新专用，无需手动下载。
-
-            ---
-            macOS 版本已通过 Apple 代码签名和公证，可直接安装使用。
+            本版 macOS 使用 ad-hoc 签名，未做 Apple 公证；Windows 未配置 Authenticode 证书，系统可能提示未知开发者。
+            自动更新仅来自本仓库，并用独立 Tauri 密钥验证更新包。SHA256SUMS 文件用于核对下载完整性。
+            沿用官方应用标识、ccswitch:// 协议及数据目录；安装会替换同位置的 CC Switch。安装前退出旧版并在设置中备份数据，不要同时运行两版。
+            未进行 Windows 10/11 实机安装、macOS 隔离区首次启动或真实上游模型调用验收；构建成功不等于这些场景已实测。
           files: release-assets/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -728,4 +717,5 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euxo pipefail
+          python3 -c 'import json; d=json.load(open("latest.json")); assert set(d["platforms"]) == {"darwin-aarch64", "darwin-x86_64", "windows-x86_64"}; assert all(p["signature"] for p in d["platforms"].values())'
           gh release upload "$GITHUB_REF_NAME" latest.json --clobber --repo "$GITHUB_REPOSITORY"
