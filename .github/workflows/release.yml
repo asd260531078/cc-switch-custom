@@ -400,7 +400,7 @@ jobs:
           echo "=== Verifying .app: $APP_PATH ==="
           codesign --verify --deep --strict --verbose=2 "$APP_PATH"
           echo "✅ codesign verification passed"
-          lipo -verify_arch arm64 x86_64 "$APP_PATH/Contents/MacOS/cc-switch"
+          lipo "$APP_PATH/Contents/MacOS/cc-switch" -verify_arch arm64 x86_64
           if [ -z "$APPLE_CERTIFICATE" ]; then
             DMG_PATH=$(find release-assets -maxdepth 1 -name '*.dmg' -type f -print -quit)
             test -n "$DMG_PATH"
@@ -410,7 +410,7 @@ jobs:
             hdiutil attach "$DMG_PATH" -readonly -nobrowse -mountpoint "$MOUNT_PATH"
             trap 'hdiutil detach "$MOUNT_PATH"' EXIT
             codesign --verify --deep --strict --verbose=2 "$MOUNT_PATH/CC Switch.app"
-            lipo -verify_arch arm64 x86_64 "$MOUNT_PATH/CC Switch.app/Contents/MacOS/cc-switch"
+            lipo "$MOUNT_PATH/CC Switch.app/Contents/MacOS/cc-switch" -verify_arch arm64 x86_64
             echo "Ad-hoc signature, DMG integrity and universal architectures verified; not Apple notarized."
             exit 0
           fi
@@ -568,6 +568,7 @@ jobs:
           PYHASH
 
       - name: Upload release artifacts to workflow
+        if: always()
         uses: actions/upload-artifact@v7
         with:
           name: release-assets-${{ runner.os }}-${{ matrix.arch || runner.arch }}
