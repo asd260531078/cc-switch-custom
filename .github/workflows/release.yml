@@ -239,10 +239,11 @@ jobs:
           WINDOWS_RELEASE_ARCH: ${{ matrix.arch || 'x86_64' }}
         run: |
           $ErrorActionPreference = 'Stop'
+          # Invoke native node directly: PowerShell strips -- when invoking pnpm.ps1.
           if ($env:WINDOWS_RELEASE_ARCH -eq 'arm64') {
-            pnpm exec tauri build --target aarch64-pc-windows-msvc --bundles msi
+            node node_modules/@tauri-apps/cli/tauri.js build --target aarch64-pc-windows-msvc --bundles msi
           } else {
-            pnpm exec tauri build --bundles msi -- --locked
+            node node_modules/@tauri-apps/cli/tauri.js build --bundles msi -- --locked
           }
 
       - name: Build Tauri App (Linux)
