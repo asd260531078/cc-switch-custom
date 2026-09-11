@@ -9,6 +9,7 @@ export interface DeepLinkImportRequest {
   // Common fields
   app?:
     | "claude"
+    | "claude-desktop"
     | "codex"
     | "gemini"
     | "grokbuild"
@@ -67,6 +68,7 @@ export interface McpImportResult {
 }
 
 export type ImportResult =
+  | string
   | { type: "provider"; id: string }
   | { type: "prompt"; id: string }
   | {

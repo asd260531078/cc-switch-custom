@@ -4546,6 +4546,11 @@ impl ProviderService {
         // Save to database
         state.db.save_provider(app_type.as_str(), &provider)?;
 
+        // Desktop import-only must not select the first provider or write a profile.
+        if matches!(app_type, AppType::ClaudeDesktop) && !add_to_live {
+            return Ok(true);
+        }
+
         // Additive mode apps (OpenCode, OpenClaw): optionally write to live config.
         if app_type.is_additive_mode() {
             // OMO / OMO Slim providers use exclusive mode and write to dedicated config file.

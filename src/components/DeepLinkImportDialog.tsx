@@ -100,13 +100,30 @@ export function DeepLinkImportDialog() {
     };
   }, [t]);
 
-  const handleImport = async () => {
+  const handleImport = async (switchAfterImport?: boolean) => {
     if (!request) return;
 
     setIsImporting(true);
 
     try {
-      const result = await deeplinkApi.importFromDeeplink(request);
+      // Deep links are untrusted input. Claude Desktop must never inherit its
+      // active-provider state from a URL: the user explicitly chooses between
+      // saving it and switching to it in this confirmation dialog.
+      const importRequest =
+        request.app === "claude-desktop"
+          ? { ...request, enabled: switchAfterImport === true }
+          : request;
+      const result = await deeplinkApi.importFromDeeplink(importRequest);
+      const refreshProvider = async () => {
+        await queryClient.invalidateQueries({
+          queryKey: ["providers", request.app],
+        });
+        if (request.app === "claude-desktop") {
+          await queryClient.invalidateQueries({
+            queryKey: ["claudeDesktopStatus"],
+          });
+        }
+      };
       const refreshMcp = async (summary: {
         importedCount: number;
         importedIds: string[];
@@ -140,11 +157,9 @@ export function DeepLinkImportDialog() {
       };
 
       // Handle different result types
-      if ("type" in result) {
+      if (typeof result === "object" && result !== null && "type" in result) {
         if (result.type === "provider") {
-          await queryClient.invalidateQueries({
-            queryKey: ["providers", request.app],
-          });
+          await refreshProvider();
           toast.success(t("deeplink.importSuccess"), {
             description: t("deeplink.importSuccessDescription", {
               name: request.name,
@@ -188,9 +203,7 @@ export function DeepLinkImportDialog() {
         await refreshMcp(result);
       } else {
         // Legacy return type (string ID) - assume provider
-        await queryClient.invalidateQueries({
-          queryKey: ["providers", request.app],
-        });
+        await refreshProvider();
         toast.success(t("deeplink.importSuccess"), {
           description: t("deeplink.importSuccessDescription", {
             name: request.name,
@@ -399,13 +412,14 @@ export function DeepLinkImportDialog() {
                     <div className="font-medium text-sm text-muted-foreground">
                       {t("deeplink.apiKey")}
                     </div>
-                    <div className="col-span-2 text-sm font-mono text-muted-foreground">
+                    <div className="col-span-2 min-w-0 break-all text-sm font-mono text-muted-foreground">
                       {maskedApiKey}
                     </div>
                   </div>
 
                   {/* Model Fields - 根据应用类型显示不同的模型字段 */}
-                  {request.app === "claude" ? (
+                  {request.app === "claude" ||
+                  request.app === "claude-desktop" ? (
                     <>
                       {/* Claude 四种模型字段 */}
                       {request.haikuModel && (
@@ -413,7 +427,7 @@ export function DeepLinkImportDialog() {
                           <div className="font-medium text-sm text-muted-foreground">
                             {t("deeplink.haikuModel")}
                           </div>
-                          <div className="col-span-2 text-sm font-mono">
+                          <div className="col-span-2 min-w-0 break-all text-sm font-mono">
                             {request.haikuModel}
                           </div>
                         </div>
@@ -423,7 +437,7 @@ export function DeepLinkImportDialog() {
                           <div className="font-medium text-sm text-muted-foreground">
                             {t("deeplink.sonnetModel")}
                           </div>
-                          <div className="col-span-2 text-sm font-mono">
+                          <div className="col-span-2 min-w-0 break-all text-sm font-mono">
                             {request.sonnetModel}
                           </div>
                         </div>
@@ -433,7 +447,7 @@ export function DeepLinkImportDialog() {
                           <div className="font-medium text-sm text-muted-foreground">
                             {t("deeplink.opusModel")}
                           </div>
-                          <div className="col-span-2 text-sm font-mono">
+                          <div className="col-span-2 min-w-0 break-all text-sm font-mono">
                             {request.opusModel}
                           </div>
                         </div>
@@ -441,9 +455,11 @@ export function DeepLinkImportDialog() {
                       {request.model && (
                         <div className="grid grid-cols-3 items-center gap-4">
                           <div className="font-medium text-sm text-muted-foreground">
-                            {t("deeplink.multiModel")}
+                            {request.app === "claude-desktop"
+                              ? t("deeplink.defaultModel")
+                              : t("deeplink.multiModel")}
                           </div>
-                          <div className="col-span-2 text-sm font-mono">
+                          <div className="col-span-2 min-w-0 break-all text-sm font-mono">
                             {request.model}
                           </div>
                         </div>
@@ -767,9 +783,31 @@ export function DeepLinkImportDialog() {
               >
                 {t("common.cancel")}
               </Button>
-              <Button onClick={handleImport} disabled={isImporting}>
-                {isImporting ? t("deeplink.importing") : t("deeplink.import")}
-              </Button>
+              {request.app === "claude-desktop" ? (
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={() => handleImport(false)}
+                    disabled={isImporting}
+                  >
+                    {isImporting
+                      ? t("deeplink.importing")
+                      : t("deeplink.importOnly")}
+                  </Button>
+                  <Button
+                    onClick={() => handleImport(true)}
+                    disabled={isImporting}
+                  >
+                    {isImporting
+                      ? t("deeplink.importing")
+                      : t("deeplink.importAndSwitch")}
+                  </Button>
+                </>
+              ) : (
+                <Button onClick={() => handleImport()} disabled={isImporting}>
+                  {isImporting ? t("deeplink.importing") : t("deeplink.import")}
+                </Button>
+              )}
             </DialogFooter>
           </>
         )}

@@ -73,15 +73,30 @@ fn parse_provider_deeplink(
     version: String,
     resource: String,
 ) -> Result<DeepLinkImportRequest, AppError> {
-    let app = params
+    let mut app = params
         .get("app")
         .ok_or_else(|| AppError::InvalidInput("Missing 'app' parameter".to_string()))?
         .clone();
 
+    // Use the same Desktop aliases as AppType, with one canonical ID downstream.
+    if matches!(
+        app.as_str(),
+        "claude-desktop" | "claude_desktop" | "claudedesktop"
+    ) {
+        app = "claude-desktop".to_string();
+    }
+
     // Validate app type
     if !matches!(
         app.as_str(),
-        "claude" | "codex" | "gemini" | "grokbuild" | "opencode" | "openclaw" | "hermes"
+        "claude"
+            | "claude-desktop"
+            | "codex"
+            | "gemini"
+            | "grokbuild"
+            | "opencode"
+            | "openclaw"
+            | "hermes"
     ) {
         return Err(AppError::InvalidInput(format!(
             "Invalid provider app type: '{app}'"

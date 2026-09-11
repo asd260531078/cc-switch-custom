@@ -60,6 +60,73 @@ impl Drop for TestHomeGuard {
 // =============================================================================
 
 #[test]
+fn desktop_aliases_are_canonical_and_other_provider_validation_is_unchanged() {
+    for app in ["claude-desktop", "claude_desktop", "claudedesktop"] {
+        let url = format!("ccswitch://v1/import?resource=provider&app={app}&name=Desktop");
+        assert_eq!(
+            parse_deeplink_url(&url).unwrap().app.as_deref(),
+            Some("claude-desktop")
+        );
+    }
+    for app in ["desktop", "pi", "CLAUDE", "unknown"] {
+        let url = format!("ccswitch://v1/import?resource=provider&app={app}&name=Invalid");
+        assert!(parse_deeplink_url(&url).is_err());
+    }
+}
+
+#[test]
+fn desktop_inline_config_keeps_existing_validation() {
+    let request = DeepLinkImportRequest {
+        resource: "provider".into(),
+        app: Some("claude-desktop".into()),
+        ..Default::default()
+    };
+    for config in ["{}", "{\"env\":[]}", "not json"] {
+        let invalid = DeepLinkImportRequest {
+            config: Some(BASE64_STANDARD.encode(config)),
+            ..request.clone()
+        };
+        assert!(parse_and_merge_config(&invalid).is_err());
+    }
+    assert!(parse_and_merge_config(&DeepLinkImportRequest {
+        config: Some("%%%".into()),
+        ..request.clone()
+    })
+    .is_err());
+    assert!(parse_and_merge_config(&DeepLinkImportRequest {
+        config_url: Some("https://config.example.com/provider.json".into()),
+        ..request
+    })
+    .is_err());
+}
+
+#[test]
+fn desktop_ipc_alias_and_api_key_config_use_the_same_merge_path() {
+    let config = serde_json::json!({"env": {
+        "ANTHROPIC_API_KEY": "test-inline-key",
+        "ANTHROPIC_BASE_URL": "https://api.example.com",
+        "ANTHROPIC_MODEL": "claude-sonnet-4-6"
+    }});
+    for app in ["claude_desktop", "claudedesktop"] {
+        let request = DeepLinkImportRequest {
+            resource: "provider".into(),
+            app: Some(app.into()),
+            config: Some(BASE64_STANDARD.encode(config.to_string())),
+            ..Default::default()
+        };
+        let merged = parse_and_merge_config(&request).unwrap();
+        assert_eq!(merged.app.as_deref(), Some("claude-desktop"));
+        assert_eq!(merged.api_key.as_deref(), Some("test-inline-key"));
+        let provider =
+            super::provider::build_provider_from_request(&AppType::ClaudeDesktop, &merged).unwrap();
+        assert_eq!(
+            provider.settings_config["env"]["ANTHROPIC_AUTH_TOKEN"],
+            "test-inline-key"
+        );
+    }
+}
+
+#[test]
 fn test_parse_valid_claude_deeplink() {
     let url = "ccswitch://v1/import?resource=provider&app=claude&name=Test%20Provider&homepage=https%3A%2F%2Fexample.com&endpoint=https%3A%2F%2Fapi.example.com&apiKey=sk-test-123&icon=claude";
 

@@ -56,8 +56,16 @@ export function parseDeepLinkConfigPreview(
       };
     }
 
+    if (request.app === "claude-desktop" && format === "toml") {
+      const toml = parseToml(decoded) as Record<string, unknown>;
+      return {
+        type: "claude",
+        env: (toml.env as Record<string, string>) || {},
+      };
+    }
+
     const parsed = JSON.parse(decoded) as Record<string, unknown>;
-    if (request.app === "claude") {
+    if (request.app === "claude" || request.app === "claude-desktop") {
       return {
         type: "claude",
         env: (parsed.env as Record<string, string>) || {},

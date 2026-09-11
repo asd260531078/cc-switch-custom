@@ -338,6 +338,21 @@ fn claude_provider_models_are_claude_safe(provider: &Provider) -> bool {
 pub(crate) fn suggested_claude_desktop_routes(
     provider: &Provider,
 ) -> Option<std::collections::HashMap<String, crate::provider::ClaudeDesktopModelRoute>> {
+    suggested_claude_desktop_routes_inner(provider, true)
+}
+
+pub(crate) fn suggested_claude_desktop_deeplink_routes(
+    provider: &Provider,
+) -> Option<std::collections::HashMap<String, crate::provider::ClaudeDesktopModelRoute>> {
+    // A link can explicitly map several roles to one model. Keep each role so
+    // Desktop sub-agent requests still resolve through the official mapper.
+    suggested_claude_desktop_routes_inner(provider, false)
+}
+
+fn suggested_claude_desktop_routes_inner(
+    provider: &Provider,
+    deduplicate_models: bool,
+) -> Option<std::collections::HashMap<String, crate::provider::ClaudeDesktopModelRoute>> {
     let env = provider
         .settings_config
         .get("env")
@@ -357,6 +372,7 @@ pub(crate) fn suggested_claude_desktop_routes(
         route_key: &str,
         env_key: &str,
         supports_1m_default: bool,
+        deduplicate_models: bool,
     ) {
         let Some(raw_model) = env
             .get(env_key)
@@ -411,7 +427,7 @@ pub(crate) fn suggested_claude_desktop_routes(
 
         if let Some(existing) = routes
             .values_mut()
-            .find(|existing| existing.model == stripped_model)
+            .find(|existing| deduplicate_models && existing.model == stripped_model)
         {
             merge_into(existing);
             return;
@@ -434,6 +450,7 @@ pub(crate) fn suggested_claude_desktop_routes(
             spec.route_id,
             spec.env_key,
             supports_1m_default,
+            deduplicate_models,
         );
     }
 
@@ -446,6 +463,7 @@ pub(crate) fn suggested_claude_desktop_routes(
             primary_route,
             "ANTHROPIC_MODEL",
             supports_1m_default,
+            deduplicate_models,
         );
     }
 

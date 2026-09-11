@@ -23,6 +23,34 @@ context_window = 500000
 `;
 
 describe("parseDeepLinkConfigPreview", () => {
+  it("reuses the Claude env preview for Claude Desktop JSON and TOML configs", () => {
+    const jsonPreview = parseDeepLinkConfigPreview({
+      app: "claude-desktop",
+      config: encodeBase64(
+        JSON.stringify({
+          env: { ANTHROPIC_API_KEY: "desktop-json-secret", KEEP_ME: "visible" },
+        }),
+      ),
+      configFormat: "json",
+    });
+    const tomlPreview = parseDeepLinkConfigPreview({
+      app: "claude-desktop",
+      config: encodeBase64(
+        `[env]\nANTHROPIC_API_KEY = "desktop-toml-secret"\nKEEP_ME = "visible"\n`,
+      ),
+      configFormat: "toml",
+    });
+
+    expect(jsonPreview).toEqual({
+      type: "claude",
+      env: { ANTHROPIC_API_KEY: "desktop-json-secret", KEEP_ME: "visible" },
+    });
+    expect(tomlPreview).toEqual({
+      type: "claude",
+      env: { ANTHROPIC_API_KEY: "desktop-toml-secret", KEEP_ME: "visible" },
+    });
+  });
+
   it("previews direct Grok Build TOML and masks its API key", () => {
     const preview = parseDeepLinkConfigPreview({
       app: "grokbuild",
