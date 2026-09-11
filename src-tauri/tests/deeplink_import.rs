@@ -5,7 +5,7 @@ use std::sync::Arc;
 use base64::{engine::general_purpose::STANDARD as BASE64_STANDARD, Engine as _};
 use cc_switch_lib::{
     get_claude_desktop_default_routes, import_provider_from_deeplink, parse_deeplink_url,
-    update_settings, AppSettings, AppState, Database,
+    update_settings, AppSettings, AppState, AppType, Database, Provider, ProviderService,
 };
 use serde_json::{json, Value};
 use url::Url;
@@ -180,7 +180,7 @@ fn deeplink_import_claude_provider_persists_to_db() {
 fn deeplink_import_codex_provider_builds_auth_and_config() {
     let _guard = test_mutex().lock().expect("acquire test mutex");
     reset_test_fs();
-    let _home = ensure_test_home();
+    let home = ensure_test_home();
 
     let url = "ccswitch://v1/import?resource=provider&app=codex&name=DeepLink%20Codex&homepage=https%3A%2F%2Fopenai.example&endpoint=https%3A%2F%2Fapi.openai.example%2Fv1&apiKey=sk-test-codex-key&model=gpt-4o&icon=openai";
     let request = parse_deeplink_url(url).expect("parse deeplink url");
@@ -217,6 +217,165 @@ fn deeplink_import_codex_provider_builds_auth_and_config() {
         config_text.contains("model = \"gpt-4o\""),
         "config.toml content should contain model setting"
     );
+    let config: toml::Value = toml::from_str(config_text).expect("parse stored Codex config");
+    assert_eq!(
+        config["model_providers"]["custom"]["requires_openai_auth"].as_bool(),
+        Some(false),
+        "API-key imports must not require a manual authentication edit"
+    );
+    let live: toml::Value = toml::from_str(
+        &fs::read_to_string(home.join(".codex/config.toml")).expect("read first provider config"),
+    )
+    .expect("parse first provider config");
+    assert_eq!(
+        live["model_providers"]["custom"]["experimental_bearer_token"].as_str(),
+        request.api_key.as_deref()
+    );
+    assert_eq!(
+        live["model_providers"]["custom"]["requires_openai_auth"].as_bool(),
+        Some(false)
+    );
+    assert!(!home.join(".codex/auth.json").exists());
+}
+
+#[test]
+fn deeplink_codex_import_and_switch_use_the_key_without_manual_edits() {
+    let _guard = test_mutex().lock().expect("acquire test mutex");
+
+    for preserve_login in [false, true] {
+        for enabled in [false, true] {
+            for inline_config in [false, true] {
+                reset_test_fs();
+                let home = ensure_test_home();
+                update_settings(AppSettings {
+                    preserve_codex_official_auth_on_switch: preserve_login,
+                    ..Default::default()
+                })
+                .expect("set isolated login preservation preference");
+                let db = Arc::new(Database::memory().expect("create memory db"));
+                let state = AppState::new(db.clone());
+                let mut official = Provider::with_id(
+                    "official".into(),
+                    "OpenAI Official".into(),
+                    json!({
+                        "auth": {
+                            "auth_mode": "chatgpt",
+                            "tokens": {"access_token": "test-official-token"}
+                        },
+                        "config": "model = \"gpt-5-codex\"\n"
+                    }),
+                    None,
+                );
+                official.category = Some("official".into());
+                ProviderService::add(&state, AppType::Codex, official, true)
+                    .expect("seed official provider");
+                let config_path = home.join(".codex/config.toml");
+                let auth_path = home.join(".codex/auth.json");
+                let original_config = fs::read(&config_path).expect("read official config");
+                let original_auth = fs::read(&auth_path).expect("read official auth");
+
+                // Older links can carry their key in an inline Codex config.
+                let encoded = BASE64_STANDARD.encode(
+                    json!({
+                        "auth": {},
+                        "config": concat!(
+                            "model_provider = \"relay\"\nmodel = \"gpt-5-codex\"\n",
+                            "[model_providers.relay]\nname = \"Relay\"\n",
+                            "base_url = \"https://relay.example/v1\"\n",
+                            "requires_openai_auth = true\n",
+                            "experimental_bearer_token = \"sk-deeplink-test\"\n"
+                        )
+                    })
+                    .to_string(),
+                );
+                let mut params = vec![("enabled", if enabled { "true" } else { "false" })];
+                if inline_config {
+                    params.extend([("configFormat", "json"), ("config", encoded.as_str())]);
+                } else {
+                    params.extend([
+                        ("endpoint", "https://relay.example/v1"),
+                        ("apiKey", "sk-deeplink-test"),
+                        ("model", "gpt-5-codex"),
+                    ]);
+                }
+                let id = import_url(&state, &provider_url("codex", "Relay", &params));
+                let stored = db
+                    .get_provider_by_id(&id, "codex")
+                    .expect("query imported provider")
+                    .expect("imported provider exists");
+                let config: toml::Value =
+                    toml::from_str(stored.settings_config["config"].as_str().unwrap())
+                        .expect("parse imported config");
+                assert_eq!(
+                    config["model_providers"]["custom"]["requires_openai_auth"].as_bool(),
+                    Some(false)
+                );
+                assert_eq!(
+                    stored.settings_config["auth"]["OPENAI_API_KEY"],
+                    "sk-deeplink-test"
+                );
+                if !enabled {
+                    assert_eq!(
+                        db.get_current_provider("codex").unwrap().as_deref(),
+                        Some("official")
+                    );
+                    assert_eq!(fs::read(&config_path).unwrap(), original_config);
+                    assert_eq!(fs::read(&auth_path).unwrap(), original_auth);
+                    ProviderService::switch(&state, AppType::Codex, &id)
+                        .expect("enable saved import without editing");
+                }
+
+                // Check both initial activation and switching back after a live backfill.
+                for activation in 0..2 {
+                    if activation == 1 {
+                        ProviderService::switch(&state, AppType::Codex, "official")
+                            .expect("switch back to official login");
+                        assert_eq!(fs::read(&auth_path).unwrap(), original_auth);
+                        let backfilled = db
+                            .get_provider_by_id(&id, "codex")
+                            .expect("query backfilled provider")
+                            .expect("backfilled provider exists");
+                        assert_eq!(
+                            backfilled.settings_config["auth"]["OPENAI_API_KEY"],
+                            "sk-deeplink-test"
+                        );
+                        assert!(!backfilled.settings_config["config"]
+                            .as_str()
+                            .unwrap()
+                            .contains("experimental_bearer_token"));
+                        ProviderService::switch(&state, AppType::Codex, &id)
+                            .expect("switch to imported provider again");
+                    }
+                    assert_eq!(
+                        db.get_current_provider("codex").unwrap().as_deref(),
+                        Some(id.as_str())
+                    );
+                    let live: toml::Value =
+                        toml::from_str(&fs::read_to_string(&config_path).unwrap())
+                            .expect("parse active imported config");
+                    let custom = &live["model_providers"]["custom"];
+                    assert_eq!(
+                        custom["base_url"].as_str(),
+                        Some("https://relay.example/v1")
+                    );
+                    assert_eq!(custom["wire_api"].as_str(), Some("responses"));
+                    assert_eq!(
+                        custom["experimental_bearer_token"].as_str(),
+                        Some("sk-deeplink-test")
+                    );
+                    assert_eq!(
+                        custom["requires_openai_auth"].as_bool(),
+                        Some(preserve_login)
+                    );
+                    if preserve_login {
+                        assert_eq!(fs::read(&auth_path).unwrap(), original_auth);
+                    } else {
+                        assert!(!auth_path.exists());
+                    }
+                }
+            }
+        }
+    }
 }
 
 #[test]

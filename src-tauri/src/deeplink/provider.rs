@@ -465,7 +465,8 @@ fn build_codex_settings(request: &DeepLinkImportRequest) -> serde_json::Value {
     let model_name = toml_edit::Value::from(model_name.as_str()).to_string();
     let endpoint = toml_edit::Value::from(endpoint.as_str()).to_string();
 
-    // Build config.toml content
+    // Deep-link imports carry their own API key. Default to third-party auth;
+    // the live writer injects the bearer token and applies login preservation.
     let config_toml = format!(
         r#"model_provider = "custom"
 model = {model_name}
@@ -476,7 +477,7 @@ disable_response_storage = true
 name = {provider_display_name}
 base_url = {endpoint}
 wire_api = "responses"
-requires_openai_auth = true
+requires_openai_auth = false
 "#
     );
 

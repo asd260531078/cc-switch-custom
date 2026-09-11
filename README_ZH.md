@@ -20,7 +20,7 @@
 
 </div>
 
-本仓库定制版基于官方 v3.20.2，包含 Claude Desktop 导入修复。签名限制和安装说明见发布页；下文 Homebrew、Linux 安装方式属于官方发行版。
+本仓库定制版基于官方 v3.20.2，包含 Claude Desktop 导入与 Codex 深链认证修复。签名限制和安装说明见发布页；下文 Homebrew、Linux 安装方式属于官方发行版。
 
 ## 为什么选择 CC Switch？
 

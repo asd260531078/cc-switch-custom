@@ -20,7 +20,7 @@ English | [中文](README_ZH.md) | [日本語](README_JA.md) | [Deutsch](README_
 
 </div>
 
-This custom build is based on official v3.20.2, with the Claude Desktop import fix. Read the release notes for signing and installation details. The Homebrew and Linux instructions below refer to the upstream distribution.
+This custom build is based on official v3.20.2, with Claude Desktop import and Codex deep-link authentication fixes. Read the release notes for signing and installation details. The Homebrew and Linux instructions below refer to the upstream distribution.
 
 ## Why CC Switch?
 

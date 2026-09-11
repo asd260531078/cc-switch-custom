@@ -29,6 +29,16 @@ Desktop 弹窗的“只导入”总是提交 `enabled=false`，即使链接写�
 
 **上游核查（2026-09-11）**：最新稳定 [v3.20.2](https://github.com/farion1231/cc-switch/releases/tag/v3.20.2) 发布于 2026-09-07。当前 [main `7726c834`](https://github.com/farion1231/cc-switch/commit/7726c83476f9ae1f8a5b812aa844cd166339aa55) 领先 12 个提交，相关 parser/provider/Desktop 配置文件与 tag 相同。问题 [#6368](https://github.com/farion1231/cc-switch/issues/6368)、[#3112](https://github.com/farion1231/cc-switch/issues/3112) 开放；PR [#6369](https://github.com/farion1231/cc-switch/pull/6369)、[#6489](https://github.com/farion1231/cc-switch/pull/6489)、[#3249](https://github.com/farion1231/cc-switch/pull/3249) 均未合并，不能视作稳定版已支持。已合并 [#2928](https://github.com/farion1231/cc-switch/pull/2928) 的自定义 env 保留能力继续复用。
 
+## CX-DL-1：Codex 深链导入认证
+
+从定制版 `3.20.202` 起，`src-tauri/src/deeplink/provider.rs` 生成的 API Key 供应商配置默认使用 `requires_openai_auth=false`，省去导入后手动编辑。API Key 继续保存在内部 `auth.OPENAI_API_KEY`；启用时复用官方逻辑注入供应商自己的 `experimental_bearer_token`，并按“保留官方登录”设置调整运行配置。开启保留时运行标志仍可为 `true`，请求凭据仍是第三方 Key，不覆盖这一兼容行为。
+
+不增加协议参数、不迁移数据库、不自动修改已导入记录，也不改变链接的 `enabled` 语义。仅保存到已有供应商列表时不会切换；首个 Codex 供应商自动启用仍沿用官方行为。
+
+本地验证（2026-09-11）：旧模板被新增断言复现为失败，修改后 12 项深链集成、45 项深链单元及 117 项 Codex 配置单元测试通过，格式和 Clippy 检查通过。集成测试覆盖 URL/内嵌配置、启用/保存、保留登录开/关共 8 个组合及切换回填；使用隔离目录与虚拟凭据。Windows 实机安装及真实上游调用不属于这些测试。
+
+上游 `v3.20.2` 已包含运行时凭据注入与官方登录保留逻辑，但深链模板仍为 `true`。上游修正导入模板并通过上述回归后可撤销本项；撤销只恢复模板，不删除供应商或用户配置。对应测试位于 `src-tauri/tests/deeplink_import.rs`。
+
 ## REPO-DOC-1：移除仓库赞助宣传
 
 按本项目展示要求，删除四种语言 README 的完整赞助区（横幅、广告表、优惠及招募链接），并删除 `.github/FUNDING.yml` 中的 GitHub Sponsor 入口。此项仅调整仓库展示，应用供应商预设、共用素材及官方 MIT 版权声明保留。
