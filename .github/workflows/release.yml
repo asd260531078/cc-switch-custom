@@ -4,12 +4,21 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing version tag to build (for example v3.20.201)'
+        required: true
+        type: string
+
+env:
+  RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
 
 permissions:
   contents: write
 
 concurrency:
-  group: release-${{ github.ref_name }}
+  group: release-${{ inputs.tag || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
@@ -31,6 +40,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.tag && format('refs/tags/{0}', inputs.tag) || github.ref }}
+
+      - name: Verify release source
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          test "$(git describe --tags --exact-match HEAD)" = "$RELEASE_TAG"
+          node -e 'const fs=require("fs"); const c=JSON.parse(fs.readFileSync("src-tauri/tauri.conf.json")); if ("v"+c.version !== process.env.RELEASE_TAG) process.exit(1)'
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -198,7 +217,7 @@ jobs:
           max_attempts=3
           for attempt in $(seq 1 "$max_attempts"); do
             echo "=== macOS build/notarization attempt ${attempt}/${max_attempts} ==="
-            if pnpm tauri build --target universal-apple-darwin --bundles app,dmg -- --locked; then
+            if pnpm exec tauri build --target universal-apple-darwin --bundles app,dmg -- --locked; then
               echo "✅ macOS build/notarization succeeded"
               exit 0
             fi
@@ -221,14 +240,14 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           if ($env:WINDOWS_RELEASE_ARCH -eq 'arm64') {
-            pnpm tauri build --target aarch64-pc-windows-msvc --bundles msi
+            pnpm exec tauri build --target aarch64-pc-windows-msvc --bundles msi
           } else {
-            pnpm tauri build --bundles msi -- --locked
+            pnpm exec tauri build --bundles msi -- --locked
           }
 
       - name: Build Tauri App (Linux)
         if: runner.os == 'Linux'
-        run: pnpm tauri build --bundles appimage,deb,rpm
+        run: pnpm exec tauri build --bundles appimage,deb,rpm
 
       - name: Prepare macOS Assets
         if: runner.os == 'macOS'
@@ -236,7 +255,7 @@ jobs:
         run: |
           set -euxo pipefail
           mkdir -p release-assets
-          VERSION="${GITHUB_REF_NAME}"  # e.g., v3.5.0
+          VERSION="${RELEASE_TAG}"  # e.g., v3.5.0
 
           # Locate bundle artifacts
           TAR_GZ=""; APP_PATH=""
@@ -496,7 +515,7 @@ jobs:
         run: |
           set -euxo pipefail
           mkdir -p release-assets
-          VERSION="${GITHUB_REF_NAME}"  # e.g., v3.5.0
+          VERSION="${RELEASE_TAG}"  # e.g., v3.5.0
           ARCH="${{ matrix.arch || 'x86_64' }}"
           # Updater artifact: AppImage（含对应 .sig）
           APPIMAGE=$(find src-tauri/target/release/bundle -name "*.AppImage" | head -1 || true)
@@ -595,15 +614,15 @@ jobs:
       - name: Upload Release Assets
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: ${{ github.ref_name }}
-          name: CC Switch Custom ${{ github.ref_name }}
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: CC Switch Custom ${{ env.RELEASE_TAG }}
           draft: true
           prerelease: false
           body: |
             基于官方 CC Switch v3.20.2 的定制版，包含 Claude Desktop 一键导入修复及仓库赞助宣传移除。
 
-            - macOS 12+（Apple Silicon / Intel）：下载 `CC-Switch-${{ github.ref_name }}-macOS.dmg`。
-            - Windows 10/11 64 位：下载 `CC-Switch-${{ github.ref_name }}-Windows.msi`；绿色版使用 `Windows-Portable.zip`。
+            - macOS 12+（Apple Silicon / Intel）：下载 `CC-Switch-${{ env.RELEASE_TAG }}-macOS.dmg`。
+            - Windows 10/11 64 位：下载 `CC-Switch-${{ env.RELEASE_TAG }}-Windows.msi`；绿色版使用 `Windows-Portable.zip`。
             - `.tar.gz`、`.sig`、`latest.json` 用于应用更新，普通安装无需下载。
 
             本版 macOS 使用 ad-hoc 签名，未做 Apple 公证；Windows 未配置 Authenticode 证书，系统可能提示未知开发者。
@@ -631,14 +650,14 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euxo pipefail
-          TAG="${GITHUB_REF_NAME}"
+          TAG="${RELEASE_TAG}"
           mkdir -p dl
           gh release download "$TAG" --dir dl --repo "$GITHUB_REPOSITORY"
           ls -la dl || true
       - name: Generate latest.json
         env:
           REPO: ${{ github.repository }}
-          TAG: ${{ github.ref_name }}
+          TAG: ${{ env.RELEASE_TAG }}
         run: |
           set -euo pipefail
           VERSION="${TAG#v}"
@@ -718,4 +737,4 @@ jobs:
         run: |
           set -euxo pipefail
           python3 -c 'import json; d=json.load(open("latest.json")); assert set(d["platforms"]) == {"darwin-aarch64", "darwin-x86_64", "windows-x86_64"}; assert all(p["signature"] for p in d["platforms"].values())'
-          gh release upload "$GITHUB_REF_NAME" latest.json --clobber --repo "$GITHUB_REPOSITORY"
+          gh release upload "$RELEASE_TAG" latest.json --clobber --repo "$GITHUB_REPOSITORY"
