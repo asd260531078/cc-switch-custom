@@ -2,6 +2,8 @@
 
 # CC Switch
 
+## [⬇ 最新のカスタム版をダウンロード（Windows / macOS）](https://github.com/asd260531078/cc-switch-custom/releases/latest)
+
 ### Claude Code、Claude Desktop、Codex、Gemini CLI、Grok Build、OpenCode、OpenClaw、Hermes Agent のオールインワン管理ツール
 
 [![Version](https://img.shields.io/github/v/release/asd260531078/cc-switch-custom?color=blue&label=version)](https://github.com/asd260531078/cc-switch-custom/releases)
@@ -18,7 +20,7 @@
 
 </div>
 
-**[カスタム版をダウンロード（Windows / macOS）](https://github.com/asd260531078/cc-switch-custom/releases/latest)** — 公式 v3.20.2 に Claude Desktop インポート修正を追加。署名とインストールの注意事項はリリースページをご覧ください。以下の Homebrew・Linux 手順は公式版向けです。
+このカスタム版は公式 v3.20.2 に Claude Desktop インポート修正を追加しています。署名とインストールの注意事項はリリースページをご覧ください。以下の Homebrew・Linux 手順は公式版向けです。
 
 ## CC Switch を選ぶ理由
 
