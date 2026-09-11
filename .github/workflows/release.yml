@@ -442,7 +442,7 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           New-Item -ItemType Directory -Force -Path release-assets | Out-Null
-          $VERSION = $env:GITHUB_REF_NAME  # e.g., v3.5.0
+          $VERSION = $env:RELEASE_TAG  # e.g., v3.5.0
           $isArm64 = $env:WINDOWS_RELEASE_ARCH -eq 'arm64'
           $targetRoot = if ($isArm64) { 'src-tauri/target/aarch64-pc-windows-msvc/release' } else { 'src-tauri/target/release' }
           $assetSuffix = if ($isArm64) { '-arm64' } else { '' }
