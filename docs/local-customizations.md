@@ -29,7 +29,13 @@ Desktop 弹窗的“只导入”总是提交 `enabled=false`，即使链接写�
 
 **上游核查（2026-09-11）**：最新稳定 [v3.20.2](https://github.com/farion1231/cc-switch/releases/tag/v3.20.2) 发布于 2026-09-07。当前 [main `7726c834`](https://github.com/farion1231/cc-switch/commit/7726c83476f9ae1f8a5b812aa844cd166339aa55) 领先 12 个提交，相关 parser/provider/Desktop 配置文件与 tag 相同。问题 [#6368](https://github.com/farion1231/cc-switch/issues/6368)、[#3112](https://github.com/farion1231/cc-switch/issues/3112) 开放；PR [#6369](https://github.com/farion1231/cc-switch/pull/6369)、[#6489](https://github.com/farion1231/cc-switch/pull/6489)、[#3249](https://github.com/farion1231/cc-switch/pull/3249) 均未合并，不能视作稳定版已支持。已合并 [#2928](https://github.com/farion1231/cc-switch/pull/2928) 的自定义 env 保留能力继续复用。
 
-## 验证与撤销
+## REPO-DOC-1：移除仓库赞助宣传
+
+按本项目展示要求，删除四种语言 README 的完整赞助区（横幅、广告表、优惠及招募链接），并删除 `.github/FUNDING.yml` 中的 GitHub Sponsor 入口。此项仅调整仓库展示，应用供应商预设、共用素材及官方 MIT 版权声明保留。
+
+没有对应上游缺陷，这是本项目的展示偏好。同步官方时检查 README 和 FUNDING，避免重新引入赞助入口；用户恢复展示，或官方已移除相同内容时，可撤销对应定制差异。验证四种语言的相邻章节和链接结构、赞助入口残留以及代码目录无改动，无需运行应用测试。
+
+## Claude Desktop 导入验证与撤销
 
 行为回归位于 `src-tauri/src/deeplink/tests.rs`、`src-tauri/tests/deeplink_import.rs`、`tests/components/DeepLinkImportDialog.test.tsx`、`tests/utils/deepLinkConfigPreview.test.ts`。复用原有 Desktop 配置与模型建议测试；测试只使用内存数据库、隔离 home 和虚拟凭据。
 
