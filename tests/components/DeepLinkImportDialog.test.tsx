@@ -56,6 +56,57 @@ describe("DeepLinkImportDialog", () => {
     opusModel: "claude-opus-4-5",
   };
 
+  const piRequest = {
+    version: "v1",
+    resource: "provider" as const,
+    app: "pi" as const,
+    name: "Pi 测试 + & %",
+    endpoint: "https://api.example.com/v1",
+    apiKey: "sk-pi-test-secret",
+    model: "vendor/model+one",
+    icon: "pi",
+    iconUrl: "https://logo.example.com/Logo%2FOne.png?Case=A%2BB",
+    enabled: true,
+  };
+
+  it.each([
+    ["deeplink.importOnly", false],
+    ["deeplink.importAndEnablePi", true],
+  ] as const)(
+    "imports Pi via %s and refreshes native membership",
+    async (action, enabled) => {
+      const importSpy = vi
+        .spyOn(deeplinkApi, "importFromDeeplink")
+        .mockResolvedValue({ type: "provider", id: "pi-id" });
+      const invalidateSpy = vi.spyOn(
+        QueryClient.prototype,
+        "invalidateQueries",
+      );
+      render(<DeepLinkImportDialog />, { wrapper: Wrapper });
+      act(() => {
+        emitTauriEvent("deeplink-import", piRequest);
+      });
+
+      expect(await screen.findByText(piRequest.model)).toBeInTheDocument();
+      expect(screen.getByText("deeplink.piImportHint")).toBeInTheDocument();
+      expect(screen.queryByText(piRequest.apiKey)).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: "deeplink.importAndSwitch" }),
+      ).not.toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: action }));
+
+      await waitFor(() =>
+        expect(importSpy).toHaveBeenCalledWith({ ...piRequest, enabled }),
+      );
+      expect(invalidateSpy).toHaveBeenCalledWith({
+        queryKey: ["providers", "pi"],
+      });
+      expect(invalidateSpy).toHaveBeenCalledWith({
+        queryKey: ["pi", "currentState"],
+      });
+    },
+  );
+
   it("shows Claude Desktop models and masks its Claude env config", async () => {
     const config = btoa(
       JSON.stringify({
@@ -82,6 +133,78 @@ describe("DeepLinkImportDialog", () => {
     expect(screen.getByText("desk************")).toBeInTheDocument();
     expect(screen.queryByText("desktop-config-secret")).not.toBeInTheDocument();
     expect(screen.getByText(/NODE_OPTIONS/)).toBeInTheDocument();
+  });
+
+  it("keeps Pi actions disabled while importing and allows retry after failure", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    let rejectImport!: (error: Error) => void;
+    const importSpy = vi
+      .spyOn(deeplinkApi, "importFromDeeplink")
+      .mockImplementationOnce(
+        () =>
+          new Promise((_, reject) => {
+            rejectImport = reject;
+          }),
+      )
+      .mockResolvedValueOnce("pi-legacy-id");
+    const invalidateSpy = vi.spyOn(QueryClient.prototype, "invalidateQueries");
+    render(<DeepLinkImportDialog />, { wrapper: Wrapper });
+    act(() => {
+      emitTauriEvent("deeplink-import", piRequest);
+    });
+    fireEvent.click(
+      await screen.findByRole("button", { name: "deeplink.importAndEnablePi" }),
+    );
+    await waitFor(() => {
+      expect(
+        screen.getAllByRole("button", { name: "deeplink.importing" }),
+      ).toHaveLength(2);
+      expect(
+        screen.getByRole("button", { name: "common.cancel" }),
+      ).toBeDisabled();
+      for (const button of screen.getAllByRole("button", {
+        name: "deeplink.importing",
+      })) {
+        expect(button).toBeDisabled();
+        fireEvent.click(button);
+      }
+    });
+    expect(importSpy).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      rejectImport(new Error("Pi fixture write failed"));
+    });
+    expect(
+      await screen.findByRole("button", { name: "deeplink.importOnly" }),
+    ).toBeEnabled();
+    expect(invalidateSpy).not.toHaveBeenCalled();
+    fireEvent.click(
+      screen.getByRole("button", { name: "deeplink.importOnly" }),
+    );
+    await waitFor(() =>
+      expect(invalidateSpy).toHaveBeenCalledWith({
+        queryKey: ["pi", "currentState"],
+      }),
+    );
+    expect(importSpy).toHaveBeenLastCalledWith({
+      ...piRequest,
+      enabled: false,
+    });
+    await waitFor(() =>
+      expect(screen.queryByText(piRequest.name)).not.toBeInTheDocument(),
+    );
+  });
+
+  it("cancels a Pi link without importing or enabling it", async () => {
+    const importSpy = vi.spyOn(deeplinkApi, "importFromDeeplink");
+    render(<DeepLinkImportDialog />, { wrapper: Wrapper });
+    act(() => {
+      emitTauriEvent("deeplink-import", piRequest);
+    });
+    fireEvent.click(
+      await screen.findByRole("button", { name: "common.cancel" }),
+    );
+    expect(importSpy).not.toHaveBeenCalled();
+    expect(screen.queryByText(piRequest.name)).not.toBeInTheDocument();
   });
 
   it("imports Claude Desktop disabled even when the link requests enabled", async () => {

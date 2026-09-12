@@ -1,5 +1,8 @@
 //! Deep link module tests
 
+#[path = "pi_tests.rs"]
+mod pi;
+
 use super::mcp::parse_mcp_apps;
 use super::parser::parse_deeplink_url;
 use super::prompt::import_prompt_from_deeplink;
@@ -256,9 +259,12 @@ fn test_parse_deeplink_with_notes() {
 }
 
 #[test]
-fn pi_provider_deeplink_is_not_a_second_add_provider_entry() {
+fn pi_provider_deeplink_requires_explicit_configuration() {
     let url = "ccswitch://v1/import?resource=provider&app=pi&name=Pi";
-    assert!(parse_deeplink_url(url).is_err());
+    assert!(parse_deeplink_url(url)
+        .unwrap_err()
+        .to_string()
+        .contains("non-empty 'endpoint'"));
 }
 
 #[test]

@@ -19,7 +19,7 @@ use std::str::FromStr;
 /// 2. Merges config file if provided (v3.8+)
 /// 3. Converts it to a Provider structure
 /// 4. Delegates to ProviderService for actual import
-/// 5. Optionally sets as current provider if enabled=true
+/// 5. Optionally activates the provider (Pi adds native membership without changing defaults)
 pub fn import_provider_from_deeplink(
     state: &AppState,
     request: DeepLinkImportRequest,
@@ -95,8 +95,8 @@ pub fn import_provider_from_deeplink(
     let app_type = AppType::from_str(&app_str)
         .map_err(|_| AppError::InvalidInput(format!("Invalid app type: {app_str}")))?;
 
-    // Inline Desktop config and direct IPC requests must pass the URL checks too.
-    if matches!(app_type, AppType::ClaudeDesktop) {
+    // Inline config and direct IPC requests must pass the URL checks too.
+    if matches!(app_type, AppType::ClaudeDesktop | AppType::Pi) {
         validate_url(homepage, "homepage")?;
         for (index, endpoint) in all_endpoints.iter().enumerate() {
             validate_url(endpoint, &format!("endpoint[{index}]"))?;
@@ -113,13 +113,24 @@ pub fn import_provider_from_deeplink(
         .filter(|c| c.is_alphanumeric() || *c == '-' || *c == '_')
         .collect::<String>()
         .to_lowercase();
-    provider.id = format!("{sanitized_name}-{timestamp}");
+    provider.id = if app_type == AppType::Pi {
+        // Pi IDs are native provider keys. Repeated imports must never replace
+        // an existing entry, including imports within the same millisecond.
+        format!("cc-switch-{}", uuid::Uuid::new_v4())
+    } else {
+        format!("{sanitized_name}-{timestamp}")
+    };
 
     let provider_id = provider.id.clone();
 
     // Use ProviderService to add the provider
-    // Desktop activation is an explicit switch, including the very first import.
-    let add_to_live = !matches!(app_type, AppType::ClaudeDesktop);
+    // Pi membership is part of its locked, rollback-protected add operation.
+    // Saving only (including the first import) must not touch native config.
+    let add_to_live = match app_type {
+        AppType::Pi => merged_request.enabled.unwrap_or(false),
+        AppType::ClaudeDesktop => false,
+        _ => true,
+    };
     ProviderService::add(state, app_type.clone(), provider, add_to_live)?;
 
     // Add extra endpoints as custom endpoints (skip first one as it's the primary)
@@ -141,7 +152,7 @@ pub fn import_provider_from_deeplink(
     }
 
     // If enabled=true, set as current provider
-    if merged_request.enabled.unwrap_or(false) {
+    if merged_request.enabled.unwrap_or(false) && app_type != AppType::Pi {
         ProviderService::switch(state, app_type.clone(), &provider_id)?;
         log::info!("Provider '{provider_id}' set as current for {app_type:?}");
     }
@@ -162,11 +173,7 @@ pub(crate) fn build_provider_from_request(
         AppType::OpenCode => build_opencode_settings(request),
         AppType::OpenClaw => build_additive_app_settings(request),
         AppType::Hermes => build_hermes_settings(request),
-        AppType::Pi => {
-            return Err(AppError::InvalidInput(
-                "Pi providers must be added from the Pi provider page".to_string(),
-            ));
-        }
+        AppType::Pi => build_pi_settings(request)?,
     };
 
     // Build usage script configuration if provided
@@ -237,6 +244,80 @@ fn get_primary_endpoint(request: &DeepLinkImportRequest) -> String {
         .and_then(|ep| ep.split(',').next())
         .map(|s| s.trim().to_string())
         .unwrap_or_default()
+}
+
+/// Deep links create a complete, literal-key Pi provider. Native config editing
+/// (including command credentials and other transports) stays in the Pi form.
+pub(super) fn validate_pi_request(request: &DeepLinkImportRequest) -> Result<(), AppError> {
+    if request.config.is_some() || request.config_url.is_some() {
+        return Err(AppError::InvalidInput(
+            "Pi imports require explicit name, endpoint, apiKey and model parameters; config/configUrl is not supported".into(),
+        ));
+    }
+    for (field, value) in [
+        ("name", request.name.as_deref()),
+        ("endpoint", request.endpoint.as_deref()),
+        ("apiKey", request.api_key.as_deref()),
+        ("model", request.model.as_deref()),
+    ] {
+        if value.is_none_or(|value| value.trim().is_empty()) {
+            return Err(AppError::InvalidInput(format!(
+                "Pi provider requires a non-empty '{field}' parameter"
+            )));
+        }
+    }
+    let endpoint = request.endpoint.as_deref().unwrap_or_default().trim();
+    if endpoint.contains(',') {
+        return Err(AppError::InvalidInput(
+            "Pi imports accept exactly one endpoint".into(),
+        ));
+    }
+    validate_url(endpoint, "endpoint")?;
+    let path = url::Url::parse(endpoint)
+        .map_err(|error| AppError::InvalidInput(format!("Invalid Pi endpoint: {error}")))?
+        .path()
+        .trim_end_matches('/')
+        .to_string();
+    if ["/chat/completions", "/responses", "/messages"]
+        .iter()
+        .any(|suffix| path.ends_with(suffix))
+    {
+        return Err(AppError::InvalidInput(
+            "Pi endpoint must be an OpenAI base URL (for example https://api.example.com/v1), not a request URL".into(),
+        ));
+    }
+    if let Some(homepage) = request
+        .homepage
+        .as_deref()
+        .filter(|value| !value.is_empty())
+    {
+        validate_url(homepage, "homepage")?;
+    }
+
+    // Pi resolves !commands and $variables at request time. A masked website
+    // API key must never turn into executable or environment-reading config.
+    let api_key = request.api_key.as_deref().unwrap_or_default();
+    let has_interpolation = api_key.as_bytes().windows(2).any(|pair| {
+        pair[0] == b'$' && (pair[1].is_ascii_alphabetic() || b"_{$!".contains(&pair[1]))
+    });
+    if api_key.trim_start().starts_with('!') || has_interpolation {
+        return Err(AppError::InvalidInput(
+            "Pi imports require a literal API key; command and environment expressions are not supported".into(),
+        ));
+    }
+    Ok(())
+}
+
+fn build_pi_settings(request: &DeepLinkImportRequest) -> Result<serde_json::Value, AppError> {
+    validate_pi_request(request)?;
+    Ok(json!({
+        "name": request.name,
+        "baseUrl": get_primary_endpoint(request),
+        "apiKey": request.api_key,
+        "api": "openai-completions",
+        // Model IDs are opaque; preserve encoded punctuation and Unicode.
+        "models": [{ "id": request.model }]
+    }))
 }
 
 fn normalize_deeplink_api_key(api_key: &str) -> String {
@@ -660,6 +741,10 @@ pub fn parse_and_merge_config(
         normalized.app = Some("claude-desktop".to_string());
     }
     let request = &normalized;
+    if request.resource == "provider" && request.app.as_deref() == Some("pi") {
+        validate_pi_request(request)?;
+        return Ok(request.clone());
+    }
     // If no config provided, return original request
     if request.config.is_none() && request.config_url.is_none() {
         return Ok(request.clone());

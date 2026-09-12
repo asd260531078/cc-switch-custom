@@ -2686,6 +2686,8 @@
     "import": "匯入",
     "importOnly": "僅匯入",
     "importAndSwitch": "匯入並立即切換",
+    "importAndEnablePi": "匯入並在 Pi 中啟用",
+    "piImportHint": "僅匯入會儲存到 CC Switch；在 Pi 中啟用會新增此供應商及模型，保留既有供應商和預設模型。匯入使用 OpenAI Chat Completions 介面。",
     "importing": "匯入中...",
     "warning": "請確認以上資訊準確無誤後再匯入。匯入後可在供應商清單中編輯或刪除。",
     "parseError": "深層連結解析失敗",

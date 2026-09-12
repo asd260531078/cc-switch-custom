@@ -2685,6 +2685,8 @@
     "import": "インポート",
     "importOnly": "インポートのみ",
     "importAndSwitch": "インポートしてすぐ切り替え",
+    "importAndEnablePi": "インポートして Pi で有効化",
+    "piImportHint": "インポートのみの場合は CC Switch に保存します。Pi で有効化すると、このプロバイダーとモデルを追加し、既存のプロバイダーとデフォルトモデルを維持します。OpenAI Chat Completions API を使用します。",
     "importing": "インポート中...",
     "warning": "インポート前に内容を確認してください。後から一覧で編集・削除できます。",
     "parseError": "ディープリンクの解析に失敗しました",

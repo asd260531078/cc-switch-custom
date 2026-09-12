@@ -97,6 +97,7 @@ fn parse_provider_deeplink(
             | "opencode"
             | "openclaw"
             | "hermes"
+            | "pi"
     ) {
         return Err(AppError::InvalidInput(format!(
             "Invalid provider app type: '{app}'"
@@ -157,7 +158,7 @@ fn parse_provider_deeplink(
         .get("usageAutoInterval")
         .and_then(|v| v.parse::<u64>().ok());
 
-    Ok(DeepLinkImportRequest {
+    let request = DeepLinkImportRequest {
         version,
         resource,
         app: Some(app),
@@ -194,7 +195,11 @@ fn parse_provider_deeplink(
         usage_access_token,
         usage_user_id,
         usage_auto_interval,
-    })
+    };
+    if request.app.as_deref() == Some("pi") {
+        super::provider::validate_pi_request(&request)?;
+    }
+    Ok(request)
 }
 
 /// Parse prompt deep link parameters

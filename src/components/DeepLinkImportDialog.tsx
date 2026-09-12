@@ -26,6 +26,7 @@ import {
   riskI18nKey,
 } from "@/utils/deeplinkRisk";
 import { decodeBase64Utf8 } from "@/lib/utils/base64";
+import { invalidatePiProviderCaches } from "@/lib/query/pi";
 
 interface DeeplinkError {
   url: string;
@@ -38,6 +39,9 @@ export function DeepLinkImportDialog() {
   const [request, setRequest] = useState<DeepLinkImportRequest | null>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const hasProviderActivationChoice =
+    request?.resource === "provider" &&
+    (request.app === "claude-desktop" || request.app === "pi");
 
   // 容错判断：MCP 导入结果可能缺少 type 字段
   const isMcpImportResult = (
@@ -106,15 +110,17 @@ export function DeepLinkImportDialog() {
     setIsImporting(true);
 
     try {
-      // Deep links are untrusted input. Claude Desktop must never inherit its
-      // active-provider state from a URL: the user explicitly chooses between
-      // saving it and switching to it in this confirmation dialog.
-      const importRequest =
-        request.app === "claude-desktop"
-          ? { ...request, enabled: switchAfterImport === true }
-          : request;
+      // Desktop switching and Pi native membership require an explicit action
+      // in this dialog, independent of the activation requested by the link.
+      const importRequest = hasProviderActivationChoice
+        ? { ...request, enabled: switchAfterImport === true }
+        : request;
       const result = await deeplinkApi.importFromDeeplink(importRequest);
       const refreshProvider = async () => {
+        if (request.app === "pi") {
+          await invalidatePiProviderCaches(queryClient);
+          return;
+        }
         await queryClient.invalidateQueries({
           queryKey: ["providers", request.app],
         });
@@ -474,7 +480,7 @@ export function DeepLinkImportDialog() {
                           <div className="font-medium text-sm text-muted-foreground">
                             {t("deeplink.model")}
                           </div>
-                          <div className="col-span-2 text-sm font-mono">
+                          <div className="col-span-2 min-w-0 break-all text-sm font-mono">
                             {request.model}
                           </div>
                         </div>
@@ -769,6 +775,11 @@ export function DeepLinkImportDialog() {
                   )}
 
                   {/* Warning */}
+                  {request.app === "pi" && (
+                    <p className="text-sm text-muted-foreground">
+                      {t("deeplink.piImportHint")}
+                    </p>
+                  )}
                   <div className="rounded-lg bg-yellow-50 dark:bg-yellow-900/20 p-3 text-sm text-yellow-800 dark:text-yellow-200">
                     {t("deeplink.warning")}
                   </div>
@@ -784,7 +795,7 @@ export function DeepLinkImportDialog() {
               >
                 {t("common.cancel")}
               </Button>
-              {request.app === "claude-desktop" ? (
+              {hasProviderActivationChoice ? (
                 <>
                   <Button
                     variant="outline"
@@ -801,7 +812,11 @@ export function DeepLinkImportDialog() {
                   >
                     {isImporting
                       ? t("deeplink.importing")
-                      : t("deeplink.importAndSwitch")}
+                      : t(
+                          request.app === "pi"
+                            ? "deeplink.importAndEnablePi"
+                            : "deeplink.importAndSwitch",
+                        )}
                   </Button>
                 </>
               ) : (

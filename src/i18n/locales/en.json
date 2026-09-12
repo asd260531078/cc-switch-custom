@@ -2685,6 +2685,8 @@
     "import": "Import",
     "importOnly": "Import only",
     "importAndSwitch": "Import and switch now",
+    "importAndEnablePi": "Import and enable in Pi",
+    "piImportHint": "Import only saves to CC Switch. Enabling in Pi adds this provider and model, preserving existing providers and the default model. Imports use OpenAI Chat Completions.",
     "importing": "Importing...",
     "warning": "Please confirm the information above is correct before importing. You can edit or delete it later in the provider list.",
     "parseError": "Failed to parse deep link",

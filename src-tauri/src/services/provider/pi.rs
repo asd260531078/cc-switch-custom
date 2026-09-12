@@ -278,10 +278,33 @@ fn strip_unsupported_pi_metadata(provider: &mut Provider) {
         return;
     };
     provider.meta = Some(ProviderMeta {
-        usage_script: meta.usage_script,
-        is_partner: meta.is_partner,
-        partner_promotion_key: meta.partner_promotion_key,
-        ..ProviderMeta::default()
+        // Strip routing/accounting controls, preserving presentation metadata
+        // (including website logos) alongside Pi's usage-query settings.
+        custom_endpoints: Default::default(),
+        common_config_enabled: None,
+        claude_desktop_mode: None,
+        claude_desktop_model_routes: Default::default(),
+        endpoint_auto_select: None,
+        cost_multiplier: None,
+        pricing_model_source: None,
+        limit_daily_usd: None,
+        limit_monthly_usd: None,
+        api_format: None,
+        auth_binding: None,
+        api_key_field: None,
+        is_full_url: None,
+        prompt_cache_key: None,
+        prompt_cache_routing: None,
+        codex_fast_mode: None,
+        codex_chat_reasoning: None,
+        impersonate_claude_code: None,
+        max_output_tokens: None,
+        custom_user_agent: None,
+        local_proxy_request_overrides: None,
+        live_config_managed: None,
+        provider_type: None,
+        github_account_id: None,
+        ..meta
     });
 }
 
