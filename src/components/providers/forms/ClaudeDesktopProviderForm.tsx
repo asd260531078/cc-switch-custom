@@ -335,6 +335,7 @@ export function ClaudeDesktopProviderForm({
       ),
       icon: initialData?.icon ?? "",
       iconColor: initialData?.iconColor ?? "",
+      iconUrl: initialData?.meta?.iconUrl ?? "",
     }),
     [initialData],
   );
@@ -586,6 +587,8 @@ export function ClaudeDesktopProviderForm({
       delete meta.apiFormat;
       delete meta.endpointAutoSelect;
       delete meta.isFullUrl;
+      if (values.iconUrl) meta.iconUrl = values.iconUrl;
+      else delete meta.iconUrl;
       await onSubmit({
         ...values,
         name: values.name.trim(),
@@ -809,6 +812,8 @@ export function ClaudeDesktopProviderForm({
 
     delete meta.endpointAutoSelect;
     delete meta.isFullUrl;
+    if (values.iconUrl) meta.iconUrl = values.iconUrl;
+    else delete meta.iconUrl;
 
     await onSubmit({
       ...values,

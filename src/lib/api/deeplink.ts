@@ -25,6 +25,7 @@ export interface DeepLinkImportRequest {
   endpoint?: string;
   apiKey?: string;
   icon?: string;
+  iconUrl?: string;
   model?: string;
   notes?: string;
   haikuModel?: string;

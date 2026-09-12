@@ -1,3 +1,4 @@
+import { featuredProviderSites } from "./featuredProviderSites";
 import type { ProviderCategory } from "@/types";
 
 /**
@@ -563,6 +564,19 @@ export const geminiProviderPresets: GeminiProviderPreset[] = [
     description: "自定义 Gemini API 端点",
     category: "custom",
   },
+  ...featuredProviderSites.map<GeminiProviderPreset>((site) => ({
+    ...site.preset,
+    settingsConfig: {
+      env: {
+        GOOGLE_GEMINI_BASE_URL: site.apiBaseUrl,
+        GEMINI_API_KEY: "",
+        GEMINI_MODEL: "gemini-3.6-flash",
+      },
+    },
+    baseURL: site.apiBaseUrl,
+    model: "gemini-3.6-flash",
+    endpointCandidates: [site.apiBaseUrl],
+  })),
 ];
 
 export function getGeminiPresetByName(

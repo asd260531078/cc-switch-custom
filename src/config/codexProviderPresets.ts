@@ -1,6 +1,7 @@
 /**
  * Codex 预设供应商配置模板
  */
+import { featuredProviderSites } from "./featuredProviderSites";
 import { ProviderCategory } from "../types";
 import type {
   CodexApiFormat,
@@ -2780,4 +2781,15 @@ base_url = "https://cc-api.pipellm.ai/v1"`,
     icon: "aicodewith",
     iconColor: "#3A3B40",
   },
+  ...featuredProviderSites.map<CodexProviderPreset>((site) => ({
+    ...site.preset,
+    auth: generateThirdPartyAuth(""),
+    config: generateThirdPartyConfig(
+      site.preset.name,
+      site.apiBaseUrl + "/v1",
+      "gpt-5.6-sol",
+      { requiresOpenAiAuth: false },
+    ),
+    endpointCandidates: [site.apiBaseUrl + "/v1"],
+  })),
 ];

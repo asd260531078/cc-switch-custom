@@ -2758,6 +2758,8 @@
     "colorLabel": "Icon Color",
     "selectIcon": "Select Icon",
     "preview": "Preview",
+    "logoUrl": "Logo URL",
+    "logoUrlHint": "Optional. Use an HTTPS URL without a username or password. Invalid logos will keep the selected icon.",
     "clickToChange": "Click to change icon",
     "clickToSelect": "Click to select icon"
   },

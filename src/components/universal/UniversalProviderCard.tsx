@@ -34,7 +34,12 @@ export function UniversalProviderCard({
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent">
-            <ProviderIcon icon={provider.icon} name={provider.name} size={24} />
+            <ProviderIcon
+              icon={provider.icon}
+              iconUrl={provider.meta?.iconUrl}
+              name={provider.name}
+              size={24}
+            />
           </div>
           <div>
             <h3 className="font-semibold text-foreground">{provider.name}</h3>

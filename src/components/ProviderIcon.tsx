@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import {
   getIcon,
   hasIcon,
@@ -7,9 +7,11 @@ import {
   isUrlIcon,
 } from "@/icons/extracted";
 import { cn } from "@/lib/utils";
+import { useProviderLogo } from "@/hooks/useProviderLogo";
 
 interface ProviderIconProps {
   icon?: string; // 图标名称
+  iconUrl?: string; // Optional remote logo source; rendered only after backend caching
   name: string; // 供应商名称（用于 fallback）
   color?: string; // 自定义颜色 (Deprecated, kept for compatibility but ignored for SVG)
   size?: number | string; // 尺寸
@@ -19,12 +21,15 @@ interface ProviderIconProps {
 
 export const ProviderIcon: React.FC<ProviderIconProps> = ({
   icon,
+  iconUrl,
   name,
   color,
   size = 32,
   className,
   showFallback = true,
 }) => {
+  const cachedLogo = useProviderLogo(iconUrl);
+  const [failedLogoUrl, setFailedLogoUrl] = useState<string>();
   // 获取内联 SVG 字符串
   const iconSvg = useMemo(() => {
     if (icon && !isUrlIcon(icon) && hasIcon(icon)) {
@@ -34,7 +39,7 @@ export const ProviderIcon: React.FC<ProviderIconProps> = ({
   }, [icon]);
 
   // 获取图标 URL（URL_ICONS 列表中的 SVG / 光栅图片）
-  const iconUrl = useMemo(() => {
+  const builtInIconUrl = useMemo(() => {
     if (icon && isUrlIcon(icon)) {
       return getIconUrl(icon);
     }
@@ -66,6 +71,26 @@ export const ProviderIcon: React.FC<ProviderIconProps> = ({
     return undefined;
   }, [color, icon]);
 
+  // The hook only exposes a backend-validated data URI. A bad image falls back
+  // to the selected built-in icon without retaining the failure for a new URL.
+  if (cachedLogo && failedLogoUrl !== iconUrl) {
+    return (
+      <img
+        key={iconUrl}
+        src={cachedLogo}
+        alt={name}
+        title={name}
+        className={cn(
+          "inline-flex items-center justify-center flex-shrink-0 object-contain",
+          className,
+        )}
+        style={{ width: sizeStyle.width, height: sizeStyle.height }}
+        loading="lazy"
+        onError={() => setFailedLogoUrl(iconUrl)}
+      />
+    );
+  }
+
   // 内联 SVG 渲染（支持 CSS currentColor 着色）
   if (iconSvg) {
     return (
@@ -82,10 +107,10 @@ export const ProviderIcon: React.FC<ProviderIconProps> = ({
   }
 
   // URL-based 图标（大型 SVG / 光栅图片）：以 <img> 渲染
-  if (iconUrl) {
+  if (builtInIconUrl) {
     return (
       <img
-        src={iconUrl}
+        src={builtInIconUrl}
         alt={name}
         title={name}
         className={cn(

@@ -2758,6 +2758,8 @@
     "colorLabel": "图标颜色",
     "selectIcon": "选择图标",
     "preview": "预览",
+    "logoUrl": "网站 Logo 地址",
+    "logoUrlHint": "可选。请使用不含用户名和密码的 HTTPS 地址；无效 Logo 会继续显示所选图标。",
     "clickToChange": "点击更换图标",
     "clickToSelect": "点击选择图标"
   },

@@ -5,6 +5,7 @@ import type { TFunction } from "i18next";
 import { useForm } from "react-hook-form";
 import { Form } from "@/components/ui/form";
 import type { ProviderCategory } from "@/types";
+import { featuredProviderSites } from "@/config/featuredProviderSites";
 import {
   ProviderPresetSelector,
   filterPresetEntries,
@@ -228,7 +229,7 @@ describe("ProviderPresetSelector pure helpers", () => {
           t,
         }),
       ),
-    ).toEqual(["alpha", "beta", "delta", "gamma"]);
+    ).toEqual(["alpha", "beta"]);
   });
 
   it("original 模式按「官方 → 尊享伙伴 → 赞助商 → 非赞助商」四段排序，前三组保序、末组按显示名，双重身份不重复", () => {
@@ -324,17 +325,50 @@ describe("ProviderPresetSelector pure helpers", () => {
 });
 
 describe("ProviderPresetSelector", () => {
-  it("默认（original 模式）将官方分类置顶，非赞助商按显示名排序", () => {
+  it("将两个指定站点放在第一、第二，自定义配置在其后，并保留正确的选择 ID", async () => {
+    const user = userEvent.setup();
+    const onPresetChange = vi.fn();
+    const entries: TestPresetEntry[] = [
+      ...presetEntries,
+      ...featuredProviderSites.map((site) => ({
+        id: site.key,
+        preset: { ...site.preset, settingsConfig: {} },
+      })),
+    ];
+    renderSelector({ entries, onPresetChange });
+    const firstButtons = () =>
+      screen
+        .getAllByRole("button")
+        .filter((button) => button.classList.contains("w-full"))
+        .slice(0, 3)
+        .map((button) => button.textContent);
+    expect(firstButtons()).toEqual([
+      "Token-AI",
+      "MX-AI",
+      "providerPreset.custom",
+    ]);
+    await user.click(getSortButton());
+    expect(firstButtons()).toEqual([
+      "Token-AI",
+      "MX-AI",
+      "providerPreset.custom",
+    ]);
+    await user.click(screen.getByRole("button", { name: "MX-AI" }));
+    expect(onPresetChange).toHaveBeenLastCalledWith("mx-ai");
+    await user.click(getSearchButton());
+    await user.type(getSearchInput(), "MX-AI");
+    expect(firstButtons()).toEqual(["MX-AI", "providerPreset.custom"]);
+  });
+
+  it("默认只展示官方预设和自定义配置，官方分类置顶", () => {
     renderSelector();
 
     // 组件内 t() 未配置翻译资源，显示名回退为 key 字面量：
-    // Beta Gateway < Delta Mirror < preset.gamma。
+    // 第三方和聚合服务不会进入可见列表。
     expect(getPresetButtonTexts()).toEqual([
       "providerPreset.custom",
       "preset.alpha",
       "Beta Gateway",
-      "Delta Mirror",
-      "preset.gamma",
     ]);
   });
 
@@ -347,9 +381,7 @@ describe("ProviderPresetSelector", () => {
     expect(getPresetButtonTexts()).toEqual([
       "providerPreset.custom",
       "Beta Gateway",
-      "Delta Mirror",
       "preset.alpha",
-      "preset.gamma",
     ]);
 
     await user.click(getSortButton());
@@ -358,8 +390,6 @@ describe("ProviderPresetSelector", () => {
       "providerPreset.custom",
       "preset.alpha",
       "Beta Gateway",
-      "Delta Mirror",
-      "preset.gamma",
     ]);
   });
 
@@ -424,8 +454,8 @@ describe("ProviderPresetSelector", () => {
       btn.className.includes("w-full"),
     );
 
-    // 至少包含 custom + 4 个预设 = 5 个等宽按钮(搜索/排序按钮为 size-8 不计入)
-    expect(fullWidthButtons.length).toBeGreaterThanOrEqual(5);
+    // custom + 2 个官方预设；搜索/排序按钮为 size-8，不计入。
+    expect(fullWidthButtons).toHaveLength(3);
   });
 
   it("preset.icon 存在时按钮内渲染图标元素(img/svg)", () => {
@@ -512,10 +542,13 @@ describe("ProviderPresetSelector", () => {
         name: /providerPreset\.(searchInput|searchPlaceholder)|搜索预设|search/i,
       }),
     ).not.toBeInTheDocument();
-    // 收起后所有预设恢复显示
+    // 收起后官方预设恢复显示，第三方预设仍不可见。
     expect(
-      screen.getByRole("button", { name: "preset.gamma" }),
+      screen.getByRole("button", { name: "preset.alpha" }),
     ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "preset.gamma" }),
+    ).not.toBeInTheDocument();
   });
 
   it("按 Ctrl+F 快捷键打开搜索输入框", async () => {
@@ -598,9 +631,12 @@ describe("ProviderPresetSelector", () => {
         name: /providerPreset\.(searchInput|searchPlaceholder)|搜索预设|search/i,
       }),
     ).not.toBeInTheDocument();
-    // 收起后清空 query,所有预设恢复显示
+    // 收起后清空 query，仅恢复官方预设。
     expect(
-      screen.getByRole("button", { name: "preset.gamma" }),
+      screen.getByRole("button", { name: "preset.alpha" }),
     ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "preset.gamma" }),
+    ).not.toBeInTheDocument();
   });
 });

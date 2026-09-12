@@ -21,7 +21,7 @@ vi.mock("@/components/JsonEditor", () => ({
 }));
 
 describe("GrokBuildProviderForm", () => {
-  it("offers curated Grok Build presets and applies one", async () => {
+  it("keeps Grok official presets, removes relays, and applies the xAI API preset", async () => {
     const user = userEvent.setup();
     const { container } = render(
       <GrokBuildProviderForm
@@ -34,15 +34,19 @@ describe("GrokBuildProviderForm", () => {
     // 国产官方直连（cn_official）不在 Grok Build 预设列表里
     expect(screen.queryByRole("button", { name: /BytePlus/ })).toBeNull();
     expect(screen.queryByRole("button", { name: /Kimi/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /PatewayAI/ })).toBeNull();
+    expect(
+      screen.getByRole("button", { name: /Grok Official/ }),
+    ).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: /PatewayAI/ }));
+    await user.click(screen.getByRole("button", { name: /xAI \(Grok\)/ }));
 
     const baseUrlInput =
       container.querySelector<HTMLInputElement>("#codexBaseUrl");
     const nameInput =
       container.querySelector<HTMLInputElement>('input[name="name"]');
-    expect(baseUrlInput?.value).toBe("https://api.pateway.ai/v1");
-    expect(nameInput?.value).toBe("PatewayAI");
+    expect(baseUrlInput?.value).toBe("https://api.x.ai/v1");
+    expect(nameInput?.value).toBe("xAI (Grok)");
   });
 
   it("submits a complete config.toml payload with Grok defaults", async () => {

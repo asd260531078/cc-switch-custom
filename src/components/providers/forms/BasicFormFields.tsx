@@ -70,6 +70,7 @@ export function BasicFormFields({
             >
               <ProviderIcon
                 icon={currentIcon}
+                iconUrl={form.watch("iconUrl")}
                 name={providerName}
                 color={effectiveIconColor}
                 size={48}
@@ -122,6 +123,45 @@ export function BasicFormFields({
           </DialogContent>
         </Dialog>
       </div>
+
+      <FormField
+        control={form.control}
+        name="iconUrl"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>{t("providerIcon.logoUrl")}</FormLabel>
+            <div className="flex gap-2">
+              <FormControl>
+                <ImeSafeInput
+                  ref={field.ref}
+                  name={field.name}
+                  value={field.value ?? ""}
+                  onValueChange={field.onChange}
+                  onBlur={field.onBlur}
+                  disabled={field.disabled}
+                  type="text"
+                  inputMode="url"
+                  maxLength={2048}
+                  placeholder="https://example.com/logo.png"
+                />
+              </FormControl>
+              {field.value && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => field.onChange("")}
+                >
+                  {t("common.clear", { defaultValue: "清除" })}
+                </Button>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {t("providerIcon.logoUrlHint")}
+            </p>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
 
       {/* Slot for additional fields between icon and name */}
       {beforeNameSlot}

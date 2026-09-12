@@ -326,11 +326,12 @@ export function DeepLinkImportDialog() {
               {(request.resource === "provider" || !request.resource) && (
                 <>
                   {/* Provider Icon - enlarge and center near the top */}
-                  {request.icon && (
+                  {(request.icon || request.iconUrl) && (
                     <div className="flex justify-center pt-2 pb-1">
                       <ProviderIcon
                         icon={request.icon}
-                        name={request.name || request.icon}
+                        iconUrl={request.iconUrl}
+                        name={request.name || request.icon || "Provider"}
                         size={80}
                         className="drop-shadow-sm"
                       />

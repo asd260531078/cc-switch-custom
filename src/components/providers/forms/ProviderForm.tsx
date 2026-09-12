@@ -454,6 +454,7 @@ function ProviderFormFull({
                   : CLAUDE_DEFAULT_CONFIG,
       icon: initialData?.icon ?? "",
       iconColor: initialData?.iconColor ?? "",
+      iconUrl: initialData?.meta?.iconUrl ?? "",
     }),
     [initialData, appId],
   );
@@ -1693,7 +1694,7 @@ function ProviderFormFull({
     }
 
     const metaSource = payload.meta ?? initialData?.meta;
-    const baseMeta: ProviderMeta | undefined = metaSource
+    let baseMeta: ProviderMeta | undefined = metaSource
       ? { ...metaSource }
       : undefined;
     // Existing-provider edits never own endpoint membership. The backend
@@ -1701,6 +1702,11 @@ function ProviderFormFull({
     // dedicated commands and remain safe from stale form snapshots.
     if (isEditMode && baseMeta) {
       delete baseMeta.custom_endpoints;
+    }
+    if (values.iconUrl) {
+      (baseMeta ??= {}).iconUrl = values.iconUrl;
+    } else {
+      delete baseMeta?.iconUrl;
     }
 
     const providerType = isCopilotProvider

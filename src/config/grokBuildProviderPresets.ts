@@ -21,6 +21,7 @@
  * base_url / model / wire_api 三个字段（extractCodex* 工具），再重建
  * Grok CLI 自己的 config.toml。
  */
+import { featuredProviderSites } from "./featuredProviderSites";
 import type { ProviderCategory } from "../types";
 import type { CodexApiFormat } from "../types";
 import { GROK_BUILD_DEFAULT_MODEL } from "../utils/grokBuildConfig";
@@ -607,4 +608,10 @@ export const grokBuildProviderPresets: GrokBuildProviderPreset[] = [
     endpointCandidates: ["https://api.therouter.ai/v1"],
     category: "aggregator",
   },
+  ...featuredProviderSites.map<GrokBuildProviderPreset>((site) => ({
+    ...site.preset,
+    auth: grokAuth(),
+    config: grokPresetConfig(site.preset.name, site.apiBaseUrl + "/v1"),
+    endpointCandidates: [site.apiBaseUrl + "/v1"],
+  })),
 ];

@@ -171,6 +171,7 @@ export function GrokBuildProviderForm({
           initialData?.iconColor,
         ) ?? "",
       iconColor: initialData?.iconColor ?? "",
+      iconUrl: initialData?.meta?.iconUrl ?? "",
     },
     mode: "onSubmit",
   });
@@ -306,6 +307,9 @@ export function GrokBuildProviderForm({
     // 官方条目：config 快照原样透传（新增时为空），不做自定义模型字段校验，
     // 也不重建 config —— 新增走 ensure seed，编辑只允许改名称/图标等元信息。
     if (category === "official") {
+      const meta: ProviderMeta = { ...(initialData?.meta ?? {}) };
+      if (values.iconUrl) meta.iconUrl = values.iconUrl;
+      else delete meta.iconUrl;
       await onSubmit({
         ...values,
         name,
@@ -315,7 +319,7 @@ export function GrokBuildProviderForm({
         presetId: selectedPresetId ?? undefined,
         presetCategory: "official",
         isPartner: false,
-        meta: initialData?.meta,
+        meta,
       });
       return;
     }
@@ -382,6 +386,8 @@ export function GrokBuildProviderForm({
     const parsedMaxOutputTokens = Number.parseInt(maxOutputTokens, 10);
     const initialMeta = { ...(initialData?.meta ?? {}) };
     delete initialMeta.custom_endpoints;
+    if (values.iconUrl) initialMeta.iconUrl = values.iconUrl;
+    else delete initialMeta.iconUrl;
     const meta: ProviderMeta = {
       ...initialMeta,
       apiFormat,

@@ -2,6 +2,7 @@
  * OpenClaw provider presets configuration
  * OpenClaw uses models.providers structure with custom provider configs
  */
+import { featuredProviderSites } from "./featuredProviderSites";
 import type {
   ProviderCategory,
   OpenClawProviderConfig,
@@ -3752,4 +3753,16 @@ export const openclawProviderPresets: OpenClawProviderPreset[] = [
       },
     },
   },
+  ...featuredProviderSites.map<OpenClawProviderPreset>((site) => ({
+    ...site.preset,
+    settingsConfig: {
+      baseUrl: site.apiBaseUrl,
+      apiKey: "",
+      api: "anthropic-messages",
+      models: [
+        { id: "claude-sonnet-5", name: "Claude Sonnet 5" },
+        { id: "claude-opus-5", name: "Claude Opus 5" },
+      ],
+    },
+  })),
 ];

@@ -3,7 +3,14 @@ use crate::deeplink::{
     import_skill_from_deeplink, parse_deeplink_url, DeepLinkImportRequest,
 };
 use crate::store::AppState;
-use tauri::State;
+use tauri::{Manager, State};
+
+/// Website logos use the same platform-neutral IPC/data-URI path on every desktop OS.
+#[tauri::command]
+pub async fn get_provider_logo(app: tauri::AppHandle, icon_url: String) -> Option<String> {
+    let root = app.path().app_cache_dir().ok()?.join("provider-logos-v1");
+    crate::provider_logo::cached_logo(root, icon_url).await
+}
 
 /// Parse a deep link URL and return the parsed request for frontend confirmation
 #[tauri::command]

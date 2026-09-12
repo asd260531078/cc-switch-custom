@@ -167,6 +167,12 @@ fn parse_provider_deeplink(
         endpoint,
         api_key,
         icon,
+        // query_pairs already decoded the outer URLSearchParams encoding once.
+        // Keep the original URL, including path/query case and percent escapes.
+        icon_url: params
+            .get("iconUrl")
+            .filter(|value| crate::provider_logo::validate_icon_url(value).is_ok())
+            .cloned(),
         model,
         notes,
         haiku_model,
@@ -236,6 +242,7 @@ fn parse_prompt_deeplink(
         content: Some(content),
         description,
         icon: None,
+        icon_url: None,
         homepage: None,
         endpoint: None,
         api_key: None,
@@ -309,6 +316,7 @@ fn parse_mcp_deeplink(
         app: None,
         name: None,
         icon: None,
+        icon_url: None,
         homepage: None,
         endpoint: None,
         api_key: None,
@@ -361,6 +369,7 @@ fn parse_skill_deeplink(
         directory,
         branch,
         icon: None,
+        icon_url: None,
         app: Some("claude".to_string()), // Skills are Claude-only
         name: None,
         enabled: None,

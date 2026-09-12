@@ -1,3 +1,4 @@
+import { featuredProviderSites } from "./featuredProviderSites";
 import type { ProviderCategory, OpenCodeProviderConfig } from "../types";
 import type { PresetTheme, TemplateValueConfig } from "./claudeProviderPresets";
 
@@ -2714,4 +2715,16 @@ export const opencodeProviderPresets: OpenCodeProviderPreset[] = [
       },
     },
   },
+  ...featuredProviderSites.map<OpenCodeProviderPreset>((site) => ({
+    ...site.preset,
+    settingsConfig: {
+      npm: "@ai-sdk/anthropic",
+      name: site.preset.name,
+      options: { baseURL: site.apiBaseUrl + "/v1", apiKey: "" },
+      models: {
+        "claude-sonnet-5": { name: "Claude Sonnet 5" },
+        "claude-opus-5": { name: "Claude Opus 5" },
+      },
+    },
+  })),
 ];

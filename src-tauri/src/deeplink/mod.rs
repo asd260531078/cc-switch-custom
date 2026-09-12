@@ -63,6 +63,9 @@ pub struct DeepLinkImportRequest {
     /// Optional provider icon name (maps to built-in SVG)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub icon: Option<String>,
+    /// Optional website logo URL; separate from the built-in icon name.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub icon_url: Option<String>,
     /// Optional model name
     #[serde(skip_serializing_if = "Option::is_none")]
     pub model: Option<String>,

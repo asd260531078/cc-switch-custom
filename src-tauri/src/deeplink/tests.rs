@@ -60,6 +60,107 @@ impl Drop for TestHomeGuard {
 // =============================================================================
 
 #[test]
+fn website_logo_protocol_preserves_case_query_and_single_url_decoding() {
+    let logos = [
+        "https://main.example/Uploads/Logo.PNG?Sig=AbC%2FDeF+X&Size=96",
+        "https://branch-a.example/Logo.webp?Token=TenantA",
+        "https://branch-b.example/Logo.webp?Token=TenantB",
+        "https://customer-domain.example/Logo.PNG?Path=%252FKeep%2BCase",
+    ];
+    for logo in logos {
+        let mut url = url::Url::parse("ccswitch://v1/import").unwrap();
+        url.query_pairs_mut().extend_pairs([
+            ("resource", "provider"),
+            ("app", "claude"),
+            ("name", "Logo test"),
+            ("endpoint", "https://shared-api.example/v1"),
+            ("apiKey", "sk-fixture"),
+            ("icon", " NewAPI "),
+            ("iconUrl", logo),
+        ]);
+        let request = parse_deeplink_url(url.as_str()).unwrap();
+        assert_eq!(request.icon.as_deref(), Some("newapi"));
+        assert_eq!(request.icon_url.as_deref(), Some(logo));
+        let merged = parse_and_merge_config(&request).unwrap();
+        assert_eq!(merged.icon_url.as_deref(), Some(logo));
+        let wire = serde_json::to_value(&merged).unwrap();
+        assert_eq!(wire["iconUrl"], logo);
+        assert!(wire.get("icon_url").is_none());
+        let roundtrip: DeepLinkImportRequest = serde_json::from_value(wire).unwrap();
+        assert_eq!(roundtrip.icon_url.as_deref(), Some(logo));
+    }
+}
+
+#[test]
+fn optional_invalid_logos_do_not_reject_old_links_or_change_provider_configuration() {
+    use super::provider::build_provider_from_request;
+    for app in [
+        AppType::Claude,
+        AppType::Codex,
+        AppType::Gemini,
+        AppType::GrokBuild,
+        AppType::OpenCode,
+        AppType::OpenClaw,
+        AppType::Hermes,
+    ] {
+        let mut url = url::Url::parse("ccswitch://v1/import").unwrap();
+        let app_name = app.as_str();
+        url.query_pairs_mut().extend_pairs([
+            ("resource", "provider"),
+            ("app", app_name),
+            ("name", "Logo test"),
+            ("homepage", "https://site.example"),
+            ("endpoint", "https://shared-api.example/v1"),
+            ("apiKey", "sk-fixture"),
+            ("model", "test-model"),
+            ("icon", "openai"),
+            ("enabled", "false"),
+        ]);
+        let baseline_request = parse_deeplink_url(url.as_str()).unwrap();
+        assert!(baseline_request.icon_url.is_none());
+        let baseline =
+            serde_json::to_value(build_provider_from_request(&app, &baseline_request).unwrap())
+                .unwrap();
+        for logo in [
+            "",
+            "not a URL",
+            "http://site.example/logo",
+            "https://user:secret@site.example/logo",
+            "https://127.0.0.1/logo",
+            "/uploads/logo.png",
+        ] {
+            let mut invalid_url = url.clone();
+            invalid_url.query_pairs_mut().append_pair("iconUrl", logo);
+            let request = parse_deeplink_url(invalid_url.as_str()).unwrap();
+            assert!(request.icon_url.is_none());
+            assert_eq!(
+                serde_json::to_value(build_provider_from_request(&app, &request).unwrap()).unwrap(),
+                baseline
+            );
+            // Direct IPC imports also ignore invalid presentation metadata.
+            let direct = DeepLinkImportRequest {
+                icon_url: Some(logo.to_string()),
+                ..baseline_request.clone()
+            };
+            assert_eq!(
+                serde_json::to_value(build_provider_from_request(&app, &direct).unwrap()).unwrap(),
+                baseline
+            );
+        }
+        let valid = DeepLinkImportRequest {
+            icon_url: Some("https://site.example/Logo.PNG?Sig=AbC".into()),
+            ..baseline_request
+        };
+        let mut provider = build_provider_from_request(&app, &valid).unwrap();
+        assert_eq!(provider.meta.as_ref().unwrap().icon_url, valid.icon_url);
+        // No usage-script configuration is fabricated just because a logo was supplied.
+        assert!(provider.meta.as_ref().unwrap().usage_script.is_none());
+        provider.meta = None;
+        assert_eq!(serde_json::to_value(provider).unwrap(), baseline);
+    }
+}
+
+#[test]
 fn desktop_aliases_are_canonical_and_other_provider_validation_is_unchanged() {
     for app in ["claude-desktop", "claude_desktop", "claudedesktop"] {
         let url = format!("ccswitch://v1/import?resource=provider&app={app}&name=Desktop");
@@ -280,6 +381,7 @@ fn test_build_gemini_provider_with_model() {
         endpoint: Some("https://api.example.com".to_string()),
         api_key: Some("test-api-key".to_string()),
         icon: None,
+        icon_url: None,
         model: Some("gemini-2.0-flash".to_string()),
         notes: None,
         haiku_model: None,
@@ -333,6 +435,7 @@ fn test_build_gemini_provider_without_model() {
         endpoint: Some("https://api.example.com".to_string()),
         api_key: Some("test-api-key".to_string()),
         icon: None,
+        icon_url: None,
         model: None,
         notes: None,
         haiku_model: None,
@@ -379,6 +482,7 @@ fn test_deeplink_usage_script_does_not_copy_provider_credentials() {
         endpoint: Some("https://api.example.com/v1/".to_string()),
         api_key: Some("sk-main".to_string()),
         icon: None,
+        icon_url: None,
         model: None,
         notes: None,
         haiku_model: None,
@@ -426,6 +530,7 @@ fn usage_script_request(code: &str, usage_enabled: Option<bool>) -> DeepLinkImpo
         endpoint: Some("https://api.example.com/v1/".to_string()),
         api_key: Some("sk-main".to_string()),
         icon: None,
+        icon_url: None,
         model: None,
         notes: None,
         haiku_model: None,
@@ -509,6 +614,7 @@ fn test_deeplink_usage_script_omits_explicit_credentials_that_match_provider() {
         endpoint: Some("https://api.example.com/v1/".to_string()),
         api_key: Some("sk-main".to_string()),
         icon: None,
+        icon_url: None,
         model: None,
         notes: None,
         haiku_model: None,
@@ -557,6 +663,7 @@ fn test_deeplink_usage_script_preserves_distinct_usage_credentials() {
         endpoint: Some("https://api.example.com/v1".to_string()),
         api_key: Some("sk-main".to_string()),
         icon: None,
+        icon_url: None,
         model: None,
         notes: None,
         haiku_model: None,
@@ -610,6 +717,7 @@ fn test_parse_and_merge_config_claude() {
         endpoint: None,
         api_key: None,
         icon: None,
+        icon_url: None,
         model: None,
         notes: None,
         haiku_model: None,
@@ -733,6 +841,7 @@ fn test_parse_and_merge_config_url_override() {
         endpoint: None,
         api_key: Some("sk-new".to_string()), // URL param should override
         icon: None,
+        icon_url: None,
         model: None,
         notes: None,
         haiku_model: None,
@@ -795,6 +904,7 @@ fn test_build_claude_provider_preserves_custom_env_fields() {
         endpoint: Some("https://api.example.com".to_string()),
         api_key: Some("sk-ant-xxx".to_string()),
         icon: None,
+        icon_url: None,
         // URL param: must win over the same key in config (haiku-from-config)
         model: Some("main-model".to_string()),
         notes: None,
@@ -851,6 +961,7 @@ fn test_build_claude_provider_without_config_unchanged() {
         endpoint: Some("https://api.example.com".to_string()),
         api_key: Some("sk".to_string()),
         icon: None,
+        icon_url: None,
         model: None,
         notes: None,
         haiku_model: None,

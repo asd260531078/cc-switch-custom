@@ -2759,6 +2759,8 @@
     "colorLabel": "圖示顏色",
     "selectIcon": "選擇圖示",
     "preview": "預覽",
+    "logoUrl": "網站 Logo 位址",
+    "logoUrlHint": "選填。請使用不含使用者名稱和密碼的 HTTPS 位址；無效 Logo 會繼續顯示所選圖示。",
     "clickToChange": "點擊更換圖示",
     "clickToSelect": "點擊選擇圖示"
   },

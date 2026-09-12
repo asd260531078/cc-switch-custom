@@ -128,31 +128,73 @@ describe("ClaudeDesktopProviderForm", () => {
     expect(screen.queryByText("模型角色")).not.toBeInTheDocument();
   });
 
-  it("直连预设保留预设模型列表", async () => {
+  it.each([
+    ["Token-AI", "https://tken.lol"],
+    ["MX-AI", "https://mxzzz.xyz"],
+  ])("选择 %s 后使用官网接口地址并可保存", async (name, baseUrl) => {
+    const user = userEvent.setup();
+    const { container, onSubmit } = renderForm(undefined);
+    await user.click(screen.getByRole("button", { name: new RegExp(name) }));
+    expect(container.querySelector("#baseUrl")).toHaveValue(baseUrl);
+    await user.type(screen.getByLabelText("API Key"), "sk-test");
+    await user.click(screen.getByRole("button", { name: "保存" }));
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+    const submitted = onSubmit.mock.calls[0][0];
+    expect(submitted.name).toBe(name);
+    expect(submitted.websiteUrl).toBe(baseUrl);
+    expect(JSON.parse(submitted.settingsConfig).env).toMatchObject({
+      ANTHROPIC_BASE_URL: baseUrl,
+      ANTHROPIC_AUTH_TOKEN: "sk-test",
+    });
+  });
+
+  it("已保存的第三方直连配置仍可编辑并保留模型列表", async () => {
     const user = userEvent.setup();
     const onSubmit = vi.fn();
-    renderForm(undefined, onSubmit);
-
-    await user.click(screen.getByRole("button", { name: /PackyCode/ }));
+    renderForm(
+      {
+        name: "Saved Relay",
+        category: "third_party",
+        settingsConfig: {
+          env: {
+            ANTHROPIC_BASE_URL: "https://relay.example.com",
+            ANTHROPIC_AUTH_TOKEN: "",
+          },
+        },
+        meta: {
+          claudeDesktopMode: "direct",
+          claudeDesktopModelRoutes: {
+            "claude-sonnet-5": { model: "claude-sonnet-5" },
+            "claude-opus-5": { model: "claude-opus-5" },
+            "claude-haiku-4-5": { model: "claude-haiku-4-5" },
+          },
+        },
+      },
+      onSubmit,
+    );
 
     expect(screen.getByDisplayValue("claude-sonnet-5")).toBeInTheDocument();
     expect(screen.getByDisplayValue("claude-opus-5")).toBeInTheDocument();
     expect(screen.getByDisplayValue("claude-haiku-4-5")).toBeInTheDocument();
 
-    await user.clear(screen.getByDisplayValue("claude-sonnet-5"));
     await user.type(screen.getByLabelText("API Key"), "sk-test");
     await user.click(screen.getByRole("button", { name: "保存" }));
 
     await waitFor(() => expect(onSubmit).toHaveBeenCalled());
-    expect(
-      onSubmit.mock.calls[0][0].meta.claudeDesktopModelRoutes,
-    ).toMatchObject({
-      "claude-opus-5": { model: "claude-opus-5" },
-      "claude-haiku-4-5": { model: "claude-haiku-4-5" },
+    expect(onSubmit.mock.calls[0][0].name).toBe("Saved Relay");
+    // 编辑沿用存量分类，不提交新的预设分类。
+    expect(onSubmit.mock.calls[0][0].presetCategory).toBeUndefined();
+    expect(JSON.parse(onSubmit.mock.calls[0][0].settingsConfig).env).toEqual({
+      ANTHROPIC_BASE_URL: "https://relay.example.com",
+      ANTHROPIC_AUTH_TOKEN: "sk-test",
     });
     expect(
       onSubmit.mock.calls[0][0].meta.claudeDesktopModelRoutes,
-    ).not.toHaveProperty("claude-sonnet-5");
+    ).toMatchObject({
+      "claude-sonnet-5": { model: "claude-sonnet-5" },
+      "claude-opus-5": { model: "claude-opus-5" },
+      "claude-haiku-4-5": { model: "claude-haiku-4-5" },
+    });
   });
 
   it("直连与模型映射分别保留自己的模型列表", async () => {

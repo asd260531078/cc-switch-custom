@@ -29,6 +29,7 @@ mod pi_config;
 mod prompt;
 mod prompt_files;
 mod provider;
+mod provider_logo;
 mod proxy;
 mod services;
 mod session_manager;
@@ -1516,6 +1517,7 @@ pub fn run() {
             commands::sync_current_providers_live,
             // Deep link import
             commands::parse_deeplink,
+            commands::get_provider_logo,
             commands::merge_deeplink_config,
             commands::import_from_deeplink,
             commands::import_from_deeplink_unified,

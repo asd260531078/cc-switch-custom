@@ -523,6 +523,7 @@ export function PiProviderForm({
       settingsConfig: initialSettingsConfigText,
       icon: initialData?.icon ?? "",
       iconColor: initialData?.iconColor ?? "",
+      iconUrl: initialData?.meta?.iconUrl ?? "",
     }),
     [initialConfig, initialData, initialSettingsConfigText],
   );
@@ -816,6 +817,7 @@ export function PiProviderForm({
       settingsConfig: JSON.stringify(presetConfig, null, 2),
       icon: preset.icon ?? "",
       iconColor: preset.iconColor ?? "",
+      iconUrl: "",
     });
     setBaseUrl(preset.settingsConfig.baseUrl);
     setApi(preset.settingsConfig.api);
@@ -1238,6 +1240,9 @@ export function PiProviderForm({
         models: normalizedModels,
         includeModels: includeModelsRef.current,
       });
+      const meta = { ...(initialData?.meta ?? {}) };
+      if (identity.iconUrl) meta.iconUrl = identity.iconUrl;
+      else delete meta.iconUrl;
       const values: ProviderFormValues = {
         name: trimmedName,
         websiteUrl: identity.websiteUrl?.trim() ?? "",
@@ -1248,7 +1253,7 @@ export function PiProviderForm({
         providerKey: isEdit ? providerId : trimmedKey,
         presetId: selectedPresetId ?? undefined,
         presetCategory: category,
-        meta: initialData?.meta,
+        meta,
       };
       await onSubmit(values);
     } catch (error) {

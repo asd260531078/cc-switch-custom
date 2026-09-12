@@ -1,6 +1,7 @@
 /**
  * 预设供应商配置模板
  */
+import { featuredProviderSites } from "./featuredProviderSites";
 import { ProviderCategory } from "../types";
 
 export interface TemplateValueConfig {
@@ -1834,4 +1835,11 @@ export const providerPresets: ProviderPreset[] = [
     icon: "aicodewith",
     iconColor: "#3A3B40",
   },
+  ...featuredProviderSites.map<ProviderPreset>((site) => ({
+    ...site.preset,
+    settingsConfig: {
+      env: { ANTHROPIC_BASE_URL: site.apiBaseUrl, ANTHROPIC_AUTH_TOKEN: "" },
+    },
+    endpointCandidates: [site.apiBaseUrl],
+  })),
 ];

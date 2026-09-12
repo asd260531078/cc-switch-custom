@@ -55,6 +55,8 @@ export const providerSchema = z.object({
   // 图标配置
   icon: z.string().optional(),
   iconColor: z.string().optional(),
+  // Keep this free-form: the backend is responsible for safely fetching optional logos.
+  iconUrl: z.string().optional(),
 });
 
 export type ProviderFormData = z.infer<typeof providerSchema>;

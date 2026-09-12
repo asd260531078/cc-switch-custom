@@ -177,6 +177,109 @@ fn deeplink_import_claude_provider_persists_to_db() {
 }
 
 #[test]
+fn site_logos_persist_independently_of_shared_api_endpoint_and_usage_configuration() {
+    let _guard = test_mutex().lock().unwrap();
+    reset_test_fs();
+    let _home = ensure_test_home();
+    let db = Arc::new(Database::memory().unwrap());
+    let state = AppState::new(db.clone());
+    let script = BASE64_STANDARD.encode("({ request: { url: baseUrl + '/usage' } })");
+    let fixtures = [
+        (
+            "Main",
+            "https://main.example",
+            "https://main.example/Logo.PNG?Token=AbC",
+        ),
+        (
+            "Branch A",
+            "https://branch-a.example",
+            "https://cdn.example/A.PNG?Sig=CaseA%2F1",
+        ),
+        (
+            "Branch B",
+            "https://branch-b.example",
+            "https://cdn.example/a.PNG?Sig=CaseB%2F1",
+        ),
+        (
+            "Custom",
+            "https://customer-domain.example",
+            "https://customer-domain.example/Uploads/Logo.webp?v=Q",
+        ),
+    ];
+    let mut ids = Vec::new();
+    for (name, homepage, logo) in fixtures {
+        let url = provider_url(
+            "claude",
+            name,
+            &[
+                ("homepage", homepage),
+                ("endpoint", "https://shared-api.example/v1"),
+                ("apiKey", "sk-fixture"),
+                ("model", "claude-sonnet-4"),
+                ("icon", " NewAPI "),
+                ("iconUrl", logo),
+                ("enabled", "false"),
+                ("usageScript", &script),
+                ("usageEnabled", "false"),
+                ("usageBaseUrl", homepage),
+            ],
+        );
+        ids.push(import_url(&state, &url));
+    }
+    for (id, (_, homepage, logo)) in ids.iter().zip(fixtures) {
+        let stored = db.get_provider_by_id(id, "claude").unwrap().unwrap();
+        assert_eq!(stored.icon.as_deref(), Some("newapi"));
+        assert_eq!(stored.website_url.as_deref(), Some(homepage));
+        assert_eq!(
+            stored.settings_config["env"]["ANTHROPIC_BASE_URL"],
+            "https://shared-api.example/v1"
+        );
+        assert_eq!(
+            stored.settings_config["env"]["ANTHROPIC_AUTH_TOKEN"],
+            "sk-fixture"
+        );
+        assert_eq!(
+            stored.settings_config["env"]["ANTHROPIC_MODEL"],
+            "claude-sonnet-4"
+        );
+        let meta = stored.meta.as_ref().unwrap();
+        assert_eq!(meta.icon_url.as_deref(), Some(logo));
+        let usage = meta.usage_script.as_ref().unwrap();
+        assert!(!usage.enabled);
+        assert_eq!(usage.base_url.as_deref(), Some(homepage));
+        assert_eq!(usage.code, "({ request: { url: baseUrl + '/usage' } })");
+        let exported = serde_json::to_value(&stored).unwrap();
+        assert_eq!(exported["meta"]["iconUrl"], logo);
+        let restored: Provider = serde_json::from_value(exported).unwrap();
+        db.save_provider("claude", &restored).unwrap();
+        assert_eq!(
+            db.get_provider_by_id(id, "claude")
+                .unwrap()
+                .unwrap()
+                .meta
+                .unwrap()
+                .icon_url
+                .as_deref(),
+            Some(logo)
+        );
+    }
+    // Metadata edits remain scoped to one supplier, even with the same API URL.
+    let mut first = db.get_provider_by_id(&ids[0], "claude").unwrap().unwrap();
+    first.meta.as_mut().unwrap().icon_url = None;
+    db.save_provider("claude", &first).unwrap();
+    assert_eq!(
+        db.get_provider_by_id(&ids[1], "claude")
+            .unwrap()
+            .unwrap()
+            .meta
+            .unwrap()
+            .icon_url
+            .as_deref(),
+        Some(fixtures[1].2)
+    );
+}
+
+#[test]
 fn deeplink_import_codex_provider_builds_auth_and_config() {
     let _guard = test_mutex().lock().expect("acquire test mutex");
     reset_test_fs();
@@ -288,7 +391,11 @@ fn deeplink_codex_import_and_switch_use_the_key_without_manual_edits() {
                     })
                     .to_string(),
                 );
-                let mut params = vec![("enabled", if enabled { "true" } else { "false" })];
+                let logo = "https://tenant.example/Logo.PNG?Token=AbC%2FDeF";
+                let mut params = vec![
+                    ("enabled", if enabled { "true" } else { "false" }),
+                    ("iconUrl", logo),
+                ];
                 if inline_config {
                     params.extend([("configFormat", "json"), ("config", encoded.as_str())]);
                 } else {
@@ -303,6 +410,10 @@ fn deeplink_codex_import_and_switch_use_the_key_without_manual_edits() {
                     .get_provider_by_id(&id, "codex")
                     .expect("query imported provider")
                     .expect("imported provider exists");
+                assert_eq!(
+                    stored.meta.as_ref().unwrap().icon_url.as_deref(),
+                    Some(logo)
+                );
                 let config: toml::Value =
                     toml::from_str(stored.settings_config["config"].as_str().unwrap())
                         .expect("parse imported config");
@@ -335,6 +446,10 @@ fn deeplink_codex_import_and_switch_use_the_key_without_manual_edits() {
                             .get_provider_by_id(&id, "codex")
                             .expect("query backfilled provider")
                             .expect("backfilled provider exists");
+                        assert_eq!(
+                            backfilled.meta.as_ref().unwrap().icon_url.as_deref(),
+                            Some(logo)
+                        );
                         assert_eq!(
                             backfilled.settings_config["auth"]["OPENAI_API_KEY"],
                             "sk-deeplink-test"

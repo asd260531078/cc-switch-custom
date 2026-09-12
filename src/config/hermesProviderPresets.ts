@@ -2,6 +2,7 @@
  * Hermes Agent provider presets configuration
  * Hermes uses custom_providers array in config.yaml
  */
+import { featuredProviderSites } from "./featuredProviderSites";
 import type { ProviderCategory } from "../types";
 import type { PresetTheme, TemplateValueConfig } from "./claudeProviderPresets";
 
@@ -2037,4 +2038,20 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
       model: { default: "gpt-5.6-sol", provider: "aicodewith" },
     },
   },
+  ...featuredProviderSites.map<HermesProviderPreset>((site) => ({
+    ...site.preset,
+    settingsConfig: {
+      name: site.key,
+      base_url: site.apiBaseUrl,
+      api_key: "",
+      api_mode: "anthropic_messages",
+      models: [
+        { id: "claude-sonnet-5", name: "Claude Sonnet 5" },
+        { id: "claude-opus-5", name: "Claude Opus 5" },
+      ],
+    },
+    suggestedDefaults: {
+      model: { default: "claude-sonnet-5", provider: site.key },
+    },
+  })),
 ];

@@ -416,6 +416,7 @@ export function ProviderCard({
                 provider.icon,
                 provider.iconColor,
               )}
+              iconUrl={provider.meta?.iconUrl}
               name={provider.name}
               color={provider.iconColor}
               size={20}

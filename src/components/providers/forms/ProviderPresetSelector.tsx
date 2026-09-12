@@ -27,6 +27,8 @@ import {
   type UniversalProviderPreset,
 } from "@/config/universalProviderPresets";
 import { ProviderIcon } from "@/components/ProviderIcon";
+import { isVisibleProviderPreset } from "@/config/providerPresetVisibility";
+import { getFeaturedProviderPriority } from "@/config/featuredProviderSites";
 
 type PresetTranslator = (key: string) => unknown;
 
@@ -89,6 +91,16 @@ export function sortPresetEntries(
   sortMode: PresetSortMode,
   t: PresetTranslator,
 ): PresetEntry[] {
+  const featured = entries
+    .filter((entry) => getFeaturedProviderPriority(entry.preset) >= 0)
+    .sort(
+      (a, b) =>
+        getFeaturedProviderPriority(a.preset) -
+        getFeaturedProviderPriority(b.preset),
+    );
+  const remaining = entries.filter(
+    (entry) => getFeaturedProviderPriority(entry.preset) < 0,
+  );
   const byDisplayName = (a: PresetEntry, b: PresetEntry) =>
     getPresetDisplayName(a.preset, t).localeCompare(
       getPresetDisplayName(b.preset, t),
@@ -99,20 +111,20 @@ export function sortPresetEntries(
     // 前三组用分区拼接而非排序，保持各自在预设文件里的相对顺序
     // （赞助商的文件顺序与 README 赞助商表对齐）；非赞助商按显示名排序。
     // 排他条件保证同时命中多组的预设只归入最前面的组、不被重复。
-    const official = entries.filter(
+    const official = remaining.filter(
       (entry) => entry.preset.category === "official",
     );
-    const prime = entries.filter(
+    const prime = remaining.filter(
       (entry) =>
         entry.preset.category !== "official" && entry.preset.primePartner,
     );
-    const partner = entries.filter(
+    const partner = remaining.filter(
       (entry) =>
         entry.preset.category !== "official" &&
         !entry.preset.primePartner &&
         entry.preset.isPartner,
     );
-    const rest = entries
+    const rest = remaining
       .filter(
         (entry) =>
           entry.preset.category !== "official" &&
@@ -120,10 +132,10 @@ export function sortPresetEntries(
           !entry.preset.isPartner,
       )
       .sort(byDisplayName);
-    return [...official, ...prime, ...partner, ...rest];
+    return [...featured, ...official, ...prime, ...partner, ...rest];
   }
 
-  return [...entries].sort(byDisplayName);
+  return [...featured, ...remaining.sort(byDisplayName)];
 }
 
 export interface PresetVisibilityOptions {
@@ -138,7 +150,14 @@ export function getVisiblePresetEntries(
 ): PresetEntry[] {
   const { query, sortMode, t } = options;
 
-  return sortPresetEntries(filterPresetEntries(entries, query, t), sortMode, t);
+  const availableEntries = entries.filter((entry) =>
+    isVisibleProviderPreset(entry.preset),
+  );
+  return sortPresetEntries(
+    filterPresetEntries(availableEntries, query, t),
+    sortMode,
+    t,
+  );
 }
 
 interface ProviderPresetSelectorProps {
@@ -316,6 +335,47 @@ export function ProviderPresetSelector({
     };
   };
 
+  const renderPresetButton = (entry: PresetEntry) => {
+    const isSelected = selectedPresetId === entry.id;
+    const isPartner = entry.preset.isPartner;
+    const isPrimePartner = entry.preset.primePartner;
+    const presetCategory = entry.preset.category ?? "others";
+    return (
+      <button
+        key={entry.id}
+        type="button"
+        onClick={() => onPresetChange(entry.id)}
+        className={`${getPresetButtonClass(isSelected, entry.preset)} relative`}
+        style={getPresetButtonStyle(isSelected, entry.preset)}
+        title={
+          presetCategoryLabels[presetCategory] ?? t("providerPreset.other")
+        }
+      >
+        {renderPresetIcon(entry.preset)}
+        <span className="truncate">
+          {getPresetDisplayName(entry.preset, t)}
+        </span>
+        {isPrimePartner ? (
+          <Heart
+            className="absolute -top-1 -right-1 h-5 w-5 fill-amber-500 text-amber-500 drop-shadow-sm"
+            strokeWidth={0}
+            aria-hidden
+          />
+        ) : (
+          isPartner && (
+            <span className="absolute -top-1 -right-1 flex items-center gap-0.5 rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-md">
+              <Star className="h-2.5 w-2.5 fill-current" />
+            </span>
+          )
+        )}
+      </button>
+    );
+  };
+
+  const featuredPresetCount = visiblePresetEntries.filter(
+    (entry) => getFeaturedProviderPriority(entry.preset) >= 0,
+  ).length;
+
   return (
     <div ref={searchContainerRef} className="space-y-3">
       <div className="flex items-center justify-between gap-2">
@@ -395,6 +455,9 @@ export function ProviderPresetSelector({
         </div>
       </div>
       <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-2">
+        {visiblePresetEntries
+          .slice(0, featuredPresetCount)
+          .map(renderPresetButton)}
         <button
           type="button"
           onClick={() => onPresetChange("custom")}
@@ -416,43 +479,9 @@ export function ProviderPresetSelector({
           </div>
         )}
 
-        {visiblePresetEntries.map((entry) => {
-          const isSelected = selectedPresetId === entry.id;
-          const isPartner = entry.preset.isPartner;
-          const isPrimePartner = entry.preset.primePartner;
-          const presetCategory = entry.preset.category ?? "others";
-          return (
-            <button
-              key={entry.id}
-              type="button"
-              onClick={() => onPresetChange(entry.id)}
-              className={`${getPresetButtonClass(isSelected, entry.preset)} relative`}
-              style={getPresetButtonStyle(isSelected, entry.preset)}
-              title={
-                presetCategoryLabels[presetCategory] ??
-                t("providerPreset.other")
-              }
-            >
-              {renderPresetIcon(entry.preset)}
-              <span className="truncate">
-                {getPresetDisplayName(entry.preset, t)}
-              </span>
-              {isPrimePartner ? (
-                <Heart
-                  className="absolute -top-1 -right-1 h-5 w-5 fill-amber-500 text-amber-500 drop-shadow-sm"
-                  strokeWidth={0}
-                  aria-hidden
-                />
-              ) : (
-                isPartner && (
-                  <span className="absolute -top-1 -right-1 flex items-center gap-0.5 rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-md">
-                    <Star className="h-2.5 w-2.5 fill-current" />
-                  </span>
-                )
-              )}
-            </button>
-          );
-        })}
+        {visiblePresetEntries
+          .slice(featuredPresetCount)
+          .map(renderPresetButton)}
       </div>
 
       {onUniversalPresetSelect && universalProviderPresets.length > 0 && (

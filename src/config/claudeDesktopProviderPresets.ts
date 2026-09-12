@@ -8,6 +8,7 @@
  *
  * 翻译来源：src/config/claudeProviderPresets.ts（排除 OAuth 与不兼容预设）
  */
+import { featuredProviderSites } from "./featuredProviderSites";
 import { ProviderCategory } from "../types";
 import type { PresetTheme } from "./claudeProviderPresets";
 
@@ -1498,4 +1499,12 @@ export const claudeDesktopProviderPresets: ClaudeDesktopProviderPreset[] = [
     icon: "aicodewith",
     iconColor: "#3A3B40",
   },
+  ...featuredProviderSites.map<ClaudeDesktopProviderPreset>((site) => ({
+    ...site.preset,
+    baseUrl: site.apiBaseUrl,
+    mode: "direct",
+    apiFormat: "anthropic",
+    modelRoutes: passthroughRoutes(),
+    endpointCandidates: [site.apiBaseUrl],
+  })),
 ];

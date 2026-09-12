@@ -1,3 +1,4 @@
+import { featuredProviderSites } from "./featuredProviderSites";
 import type { ProviderCategory } from "@/types";
 import type { PresetTheme } from "./claudeProviderPresets";
 import {
@@ -2114,6 +2115,20 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
     icon: "tencent",
     iconColor: "#00A4FF",
   },
+  ...featuredProviderSites.map<PiProviderPreset>((site) => ({
+    ...site.preset,
+    providerKey: "cc-switch-" + site.key,
+    settingsConfig: {
+      name: site.preset.name,
+      baseUrl: site.apiBaseUrl,
+      api: "anthropic-messages",
+      apiKey: "",
+      models: [
+        piModel("anthropic/claude-sonnet-5", { id: "claude-sonnet-5" }),
+        piModel("anthropic/claude-opus-5", { id: "claude-opus-5" }),
+      ],
+    },
+  })),
 ];
 
 function materializeVerifiedThinkingProfiles(
