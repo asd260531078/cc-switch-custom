@@ -811,7 +811,10 @@ mod tests {
         std::fs::write(&file, "<svg onload='alert(1)'/>").unwrap();
         assert!(read_cached_png(&file).is_none());
         write_cached_png(&root, &file, &png).unwrap();
-        std::fs::File::open(&file)
+        // Windows requires a writable handle to update the modification time.
+        std::fs::OpenOptions::new()
+            .write(true)
+            .open(&file)
             .unwrap()
             .set_modified(SystemTime::now() - CACHE_TTL - Duration::from_secs(1))
             .unwrap();
