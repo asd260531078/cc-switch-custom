@@ -2718,13 +2718,80 @@ export const opencodeProviderPresets: OpenCodeProviderPreset[] = [
   ...featuredProviderSites.map<OpenCodeProviderPreset>((site) => ({
     ...site.preset,
     settingsConfig: {
-      npm: "@ai-sdk/anthropic",
+      npm: "@ai-sdk/openai",
       name: site.preset.name,
       options: { baseURL: site.apiBaseUrl + "/v1", apiKey: "" },
+      models: {
+        "gpt-5.6-sol": { name: "GPT-5.6 Sol" },
+      },
+    },
+  })),
+  {
+    name: "OpenAI",
+    websiteUrl: "https://openai.com",
+    apiKeyUrl: "https://platform.openai.com/api-keys",
+    settingsConfig: {
+      npm: "@ai-sdk/openai",
+      name: "OpenAI",
+      options: { baseURL: "https://api.openai.com/v1", apiKey: "" },
+      models: {
+        "gpt-5.6-sol": { name: "GPT-5.6 Sol" },
+      },
+    },
+    category: "third_party",
+    icon: "openai",
+    iconColor: "#00A67E",
+  },
+  {
+    name: "Claude",
+    websiteUrl: "https://www.anthropic.com",
+    apiKeyUrl: "https://platform.claude.com/settings/keys",
+    settingsConfig: {
+      npm: "@ai-sdk/anthropic",
+      name: "Claude",
+      options: { baseURL: "https://api.anthropic.com/v1", apiKey: "" },
       models: {
         "claude-sonnet-5": { name: "Claude Sonnet 5" },
         "claude-opus-5": { name: "Claude Opus 5" },
       },
     },
-  })),
+    category: "third_party",
+    icon: "anthropic",
+    iconColor: "#D4915D",
+  },
+  {
+    name: "Gemini",
+    websiteUrl: "https://ai.google.dev",
+    apiKeyUrl: "https://aistudio.google.com/app/apikey",
+    settingsConfig: {
+      npm: "@ai-sdk/google",
+      name: "Gemini",
+      options: {
+        baseURL: "https://generativelanguage.googleapis.com/v1beta",
+        apiKey: "",
+      },
+      models: {
+        "gemini-3.6-flash": { name: "Gemini 3.6 Flash" },
+      },
+    },
+    category: "third_party",
+    icon: "gemini",
+    iconColor: "#4285F4",
+  },
+  {
+    name: "Grok",
+    websiteUrl: "https://x.ai",
+    apiKeyUrl: "https://console.x.ai",
+    settingsConfig: {
+      npm: "@ai-sdk/openai",
+      name: "Grok",
+      options: { baseURL: "https://api.x.ai/v1", apiKey: "" },
+      models: {
+        "grok-4.5": { name: "Grok 4.5" },
+      },
+    },
+    category: "third_party",
+    icon: "grok",
+    iconColor: "currentColor",
+  },
 ];

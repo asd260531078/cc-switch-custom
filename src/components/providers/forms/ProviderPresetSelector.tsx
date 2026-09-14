@@ -372,10 +372,6 @@ export function ProviderPresetSelector({
     );
   };
 
-  const featuredPresetCount = visiblePresetEntries.filter(
-    (entry) => getFeaturedProviderPriority(entry.preset) >= 0,
-  ).length;
-
   return (
     <div ref={searchContainerRef} className="space-y-3">
       <div className="flex items-center justify-between gap-2">
@@ -455,9 +451,6 @@ export function ProviderPresetSelector({
         </div>
       </div>
       <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-2">
-        {visiblePresetEntries
-          .slice(0, featuredPresetCount)
-          .map(renderPresetButton)}
         <button
           type="button"
           onClick={() => onPresetChange("custom")}
@@ -479,9 +472,7 @@ export function ProviderPresetSelector({
           </div>
         )}
 
-        {visiblePresetEntries
-          .slice(featuredPresetCount)
-          .map(renderPresetButton)}
+        {visiblePresetEntries.map(renderPresetButton)}
       </div>
 
       {onUniversalPresetSelect && universalProviderPresets.length > 0 && (

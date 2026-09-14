@@ -91,17 +91,23 @@ describe("featured provider sites", () => {
       )!;
       expect(site.apiBaseUrl).toBe(origin);
       expect(site.preset.websiteUrl).toBe(origin);
-      const claude = findPreset(providerPresets, name).settingsConfig as {
+      const claudePreset = findPreset(providerPresets, name);
+      expect(claudePreset.apiFormat).toBe("openai_responses");
+      const claude = claudePreset.settingsConfig as {
         env: Record<string, string>;
       };
-      expect(claude.env).toEqual({
-        ANTHROPIC_BASE_URL: origin,
+      expect(claude.env).toMatchObject({
+        ANTHROPIC_BASE_URL: origin + "/v1",
         ANTHROPIC_AUTH_TOKEN: "",
+        ANTHROPIC_MODEL: "gpt-5.6-sol",
       });
-      expect(findPreset(claudeDesktopProviderPresets, name).baseUrl).toBe(
-        origin,
-      );
+      expect(findPreset(claudeDesktopProviderPresets, name)).toMatchObject({
+        baseUrl: origin + "/v1",
+        mode: "proxy",
+        apiFormat: "openai_responses",
+      });
       const codex = findPreset(codexProviderPresets, name);
+      expect(codex.apiFormat).toBe("openai_responses");
       const codexConfig = parseToml(codex.config!) as any;
       expect(codexConfig.model_providers.custom).toMatchObject({
         base_url: origin + "/v1",
@@ -121,13 +127,16 @@ describe("featured provider sites", () => {
       ).toBe(origin + "/v1");
       expect(
         findPreset(openclawProviderPresets, name).settingsConfig.baseUrl,
-      ).toBe(origin);
+      ).toBe(origin + "/v1");
       expect(
         findPreset(hermesProviderPresets, name).settingsConfig.base_url,
-      ).toBe(origin);
-      expect(findPreset(piProviderPresets, name).settingsConfig.baseUrl).toBe(
-        origin,
-      );
+      ).toBe(origin + "/v1");
+      expect(findPreset(piProviderPresets, name).settingsConfig).toMatchObject({
+        baseUrl: origin + "/v1",
+        api: "openai-responses",
+        apiKey: "",
+        models: [{ id: "gpt-5.6-sol" }],
+      });
       const grok = parseToml(
         findPreset(grokBuildProviderPresets, name).config!,
       ) as any;

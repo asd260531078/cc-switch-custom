@@ -131,11 +131,14 @@ describe("ClaudeDesktopProviderForm", () => {
   it.each([
     ["Token-AI", "https://tken.lol"],
     ["MX-AI", "https://mxzzz.xyz"],
-  ])("选择 %s 后使用官网接口地址并可保存", async (name, baseUrl) => {
+  ])("选择 %s 后默认使用 Responses 并可保存", async (name, baseUrl) => {
     const user = userEvent.setup();
     const { container, onSubmit } = renderForm(undefined);
     await user.click(screen.getByRole("button", { name: new RegExp(name) }));
-    expect(container.querySelector("#baseUrl")).toHaveValue(baseUrl);
+    expect(container.querySelector("#baseUrl")).toHaveValue(baseUrl + "/v1");
+    expect(
+      screen.getByRole("combobox", { name: "接入方式" }),
+    ).toHaveTextContent("模型映射");
     await user.type(screen.getByLabelText("API Key"), "sk-test");
     await user.click(screen.getByRole("button", { name: "保存" }));
     await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
@@ -143,10 +146,73 @@ describe("ClaudeDesktopProviderForm", () => {
     expect(submitted.name).toBe(name);
     expect(submitted.websiteUrl).toBe(baseUrl);
     expect(JSON.parse(submitted.settingsConfig).env).toMatchObject({
-      ANTHROPIC_BASE_URL: baseUrl,
+      ANTHROPIC_BASE_URL: baseUrl + "/v1",
       ANTHROPIC_AUTH_TOKEN: "sk-test",
     });
+    expect(submitted.meta).toMatchObject({
+      apiFormat: "openai_responses",
+      claudeDesktopMode: "proxy",
+    });
   });
+
+  it.each([
+    [
+      "OpenAI",
+      "https://api.openai.com/v1",
+      "openai_responses",
+      "ANTHROPIC_AUTH_TOKEN",
+      "gpt-5.6-sol",
+    ],
+    [
+      "Claude",
+      "https://api.anthropic.com",
+      "anthropic",
+      "ANTHROPIC_API_KEY",
+      "claude-sonnet-5",
+    ],
+    [
+      "Gemini Native",
+      "https://generativelanguage.googleapis.com",
+      "gemini_native",
+      "ANTHROPIC_API_KEY",
+      "gemini-3.6-flash",
+    ],
+    [
+      "Grok",
+      "https://api.x.ai/v1",
+      "openai_responses",
+      "ANTHROPIC_AUTH_TOKEN",
+      "grok-4.5",
+    ],
+  ])(
+    "官方 API %s 可以填写密钥并按正确协议保存",
+    async (name, baseUrl, apiFormat, keyField, model) => {
+      const user = userEvent.setup();
+      const { container, onSubmit } = renderForm(undefined);
+      await user.click(
+        screen.getByText(name, { selector: "span" }).closest("button")!,
+      );
+      expect(container.querySelector("#baseUrl")).toHaveValue(baseUrl);
+      expect(screen.getByLabelText("API Key")).toHaveValue("");
+      expect(
+        screen.queryByTestId("codex-oauth-section"),
+      ).not.toBeInTheDocument();
+      expect(screen.queryByTestId("xai-oauth-section")).not.toBeInTheDocument();
+      await user.type(screen.getByLabelText("API Key"), "sk-official-test");
+      await user.click(screen.getByRole("button", { name: "保存" }));
+      await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+      const submitted = onSubmit.mock.calls[0][0];
+      expect(submitted.presetCategory).toBe("third_party");
+      expect(JSON.parse(submitted.settingsConfig).env).toMatchObject({
+        ANTHROPIC_BASE_URL: baseUrl,
+        [keyField]: "sk-official-test",
+      });
+      expect(submitted.meta.apiFormat).toBe(apiFormat);
+      expect(Object.values(submitted.meta.claudeDesktopModelRoutes)).toEqual(
+        expect.arrayContaining([expect.objectContaining({ model })]),
+      );
+    },
+  );
 
   it("已保存的第三方直连配置仍可编辑并保留模型列表", async () => {
     const user = userEvent.setup();

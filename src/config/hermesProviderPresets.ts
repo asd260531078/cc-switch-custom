@@ -2042,16 +2042,87 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
     ...site.preset,
     settingsConfig: {
       name: site.key,
-      base_url: site.apiBaseUrl,
+      base_url: site.apiBaseUrl + "/v1",
+      api_key: "",
+      api_mode: "codex_responses",
+      models: [{ id: "gpt-5.6-sol", name: "GPT-5.6 Sol" }],
+    },
+    suggestedDefaults: {
+      model: { default: "gpt-5.6-sol", provider: site.key },
+    },
+  })),
+  {
+    name: "OpenAI",
+    websiteUrl: "https://openai.com",
+    apiKeyUrl: "https://platform.openai.com/api-keys",
+    settingsConfig: {
+      name: "openai",
+      base_url: "https://api.openai.com/v1",
+      api_key: "",
+      api_mode: "codex_responses",
+      models: [{ id: "gpt-5.6-sol", name: "GPT-5.6 Sol" }],
+    },
+    category: "third_party",
+    icon: "openai",
+    iconColor: "#00A67E",
+  },
+  {
+    name: "Claude",
+    websiteUrl: "https://www.anthropic.com",
+    apiKeyUrl: "https://platform.claude.com/settings/keys",
+    settingsConfig: {
+      name: "anthropic",
+      base_url: "https://api.anthropic.com",
       api_key: "",
       api_mode: "anthropic_messages",
       models: [
-        { id: "claude-sonnet-5", name: "Claude Sonnet 5" },
-        { id: "claude-opus-5", name: "Claude Opus 5" },
+        {
+          id: "claude-sonnet-5",
+          name: "Claude Sonnet 5",
+        },
+        {
+          id: "claude-opus-5",
+          name: "Claude Opus 5",
+        },
       ],
     },
-    suggestedDefaults: {
-      model: { default: "claude-sonnet-5", provider: site.key },
+    category: "third_party",
+    icon: "anthropic",
+    iconColor: "#D4915D",
+  },
+  {
+    name: "Gemini",
+    websiteUrl: "https://ai.google.dev",
+    apiKeyUrl: "https://aistudio.google.com/app/apikey",
+    settingsConfig: {
+      name: "google",
+      base_url: "https://generativelanguage.googleapis.com/v1beta/openai/",
+      api_key: "",
+      api_mode: "chat_completions",
+      models: [
+        {
+          id: "gemini-3.6-flash",
+          name: "Gemini 3.6 Flash",
+        },
+      ],
     },
-  })),
+    category: "third_party",
+    icon: "gemini",
+    iconColor: "#4285F4",
+  },
+  {
+    name: "Grok",
+    websiteUrl: "https://x.ai",
+    apiKeyUrl: "https://console.x.ai",
+    settingsConfig: {
+      name: "xai",
+      base_url: "https://api.x.ai/v1",
+      api_key: "",
+      api_mode: "codex_responses",
+      models: [{ id: "grok-4.5", name: "Grok 4.5" }],
+    },
+    category: "third_party",
+    icon: "grok",
+    iconColor: "currentColor",
+  },
 ];

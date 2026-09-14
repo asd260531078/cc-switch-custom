@@ -577,6 +577,24 @@ export const geminiProviderPresets: GeminiProviderPreset[] = [
     model: "gemini-3.6-flash",
     endpointCandidates: [site.apiBaseUrl],
   })),
+  {
+    name: "Gemini",
+    websiteUrl: "https://ai.google.dev",
+    apiKeyUrl: "https://aistudio.google.com/app/apikey",
+    category: "third_party",
+    settingsConfig: {
+      env: {
+        GOOGLE_GEMINI_BASE_URL: "https://generativelanguage.googleapis.com",
+        GEMINI_API_KEY: "",
+        GEMINI_MODEL: "gemini-3.6-flash",
+      },
+    },
+    baseURL: "https://generativelanguage.googleapis.com",
+    model: "gemini-3.6-flash",
+    endpointCandidates: ["https://generativelanguage.googleapis.com"],
+    icon: "gemini",
+    iconColor: "#4285F4",
+  },
 ];
 
 export function getGeminiPresetByName(

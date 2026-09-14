@@ -39,6 +39,20 @@ Desktop 弹窗的“只导入”总是提交 `enabled=false`，即使链接写�
 
 上游 `v3.20.2` 已包含运行时凭据注入与官方登录保留逻辑，但深链模板仍为 `true`。上游修正导入模板并通过上述回归后可撤销本项；撤销只恢复模板，不删除供应商或用户配置。对应测试位于 `src-tauri/tests/deeplink_import.rs`。
 
+## PROVIDER-PRESET-1：各应用官方 API 预设与默认顺序
+
+所有应用的预设选择器固定以“自定义配置、Token-AI、MX-AI”开头；搜索仍过滤供应商，自定义配置始终保留第一位。普通预设沿用原有排序与选择 ID。
+
+Claude Code、Claude Desktop、Codex、Grok Build、OpenCode、OpenClaw、Hermes、Pi 补齐 OpenAI、Claude、Gemini、Grok 官方 API Key 模板，保留已有官方账号登录入口。Gemini CLI 仅支持 Gemini 原生协议，因此补充 Gemini 官方 API Key 模板。新增条目追加到预设数组，保留旧条目的选择 ID；内部沿用 `third_party` 分类，以保留 API Key、连通检测等操作，不触发 `official` 浏览器登录限制。
+
+各支持 Responses 的应用中，Token-AI、MX-AI 默认采用 Responses，请求根地址为各自官网域名加 `/v1`；官网链接保持原域名。Claude Desktop 同时使用模型映射模式，OpenCode 使用 `@ai-sdk/openai`，Hermes 使用 `codex_responses`。Gemini CLI 保持其支持的 Gemini 原生协议。修改只影响选择预设时填入的新配置，不迁移已保存供应商。
+
+各应用使用已有的协议适配：Codex/Grok Build 的 Claude 预设使用 Anthropic Messages 和 `x-api-key`；Gemini 预设走 Google 官方 OpenAI 兼容入口。Claude Code/Desktop 的 Gemini 预设沿用 Gemini Native。Pi 使用独立的 `cc-switch-*` 标识，并复用现有模型能力与思考档位；OpenClaw 的默认模型引用在提交时绑定实际 Provider Key，Hermes 在切换时由最终供应商 ID 与首个模型生成默认值。
+
+接口根地址按 [OpenAI Responses](https://developers.openai.com/api/docs/guides/latest-model?model=gpt-5.2)、[Claude API](https://platform.claude.com/docs/en/api/overview)、[Gemini API](https://ai.google.dev/api/generate-content)、[Google OpenAI 兼容接口](https://ai.google.dev/gemini-api/docs/openai)、[xAI Responses](https://docs.x.ai/developers/model-capabilities/text/comparison)、[OpenCode 供应商](https://opencode.ai/docs/providers)、[Hermes 运行时](https://github.com/nousresearch/hermes-agent/blob/main/hermes_cli/runtime_provider.py) 和 [Pi 自定义模型契约](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/models.md)核对。回归覆盖全部九个应用的预设可见性、搜索排序、实际表单填入/保存以及已有登录行为；浏览器隔离表单验证不替代 Windows 10/11 实机及真实上游请求验收。
+
+本次局部修正复用原网格、按钮和颜色过渡，保持选择位置稳定，不增加列表位移动画。隔离表单已检查 1108px 浅色与 720px 深色容器，并核对 Pi、OpenCode、OpenClaw、Hermes、Claude Desktop、Codex 的相关界面。选择器的排序、搜索和 Responses 默认值保持一致；Grok 图标使用 `currentColor` 适配主题。Codex 预览仍有原高级配置区域的嵌套按钮警告，该区域未在本次修改范围内。
+
 ## REPO-DOC-1：移除仓库赞助宣传
 
 按本项目展示要求，删除四种语言 README 的完整赞助区（横幅、广告表、优惠及招募链接），并删除 `.github/FUNDING.yml` 中的 GitHub Sponsor 入口。此项仅调整仓库展示，应用供应商预设、共用素材及官方 MIT 版权声明保留。

@@ -2120,15 +2120,94 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
     providerKey: "cc-switch-" + site.key,
     settingsConfig: {
       name: site.preset.name,
-      baseUrl: site.apiBaseUrl,
+      baseUrl: `${site.apiBaseUrl}/v1`,
+      api: "openai-responses",
+      apiKey: "",
+      models: [piModel("openai/gpt-5.6-sol", { id: "gpt-5.6-sol" })],
+    },
+  })),
+  // Explicit API-key presets use managed keys so Pi's built-in providers and
+  // their native login credentials remain independent. The client-relative
+  // category keeps API-key actions available; "official" is reserved for login.
+  {
+    name: "OpenAI",
+    providerKey: "cc-switch-openai",
+    websiteUrl: "https://openai.com",
+    apiKeyUrl: "https://platform.openai.com/api-keys",
+    settingsConfig: {
+      name: "OpenAI",
+      baseUrl: "https://api.openai.com/v1",
+      api: "openai-responses",
+      apiKey: "",
+      models: [
+        piModel("openai/gpt-5.6-sol", { id: "gpt-5.6-sol" }),
+        piModel("openai/gpt-5.6-terra", { id: "gpt-5.6-terra" }),
+        piModel("openai/gpt-5.6-luna", { id: "gpt-5.6-luna" }),
+      ],
+    },
+    category: "third_party",
+    icon: "openai",
+    iconColor: "#00A67E",
+  },
+  {
+    name: "Claude",
+    providerKey: "cc-switch-anthropic",
+    websiteUrl: "https://www.anthropic.com",
+    apiKeyUrl: "https://platform.claude.com/settings/keys",
+    settingsConfig: {
+      name: "Claude",
+      baseUrl: "https://api.anthropic.com",
       api: "anthropic-messages",
       apiKey: "",
       models: [
         piModel("anthropic/claude-sonnet-5", { id: "claude-sonnet-5" }),
         piModel("anthropic/claude-opus-5", { id: "claude-opus-5" }),
+        piModel("anthropic/claude-haiku-4.5-20251001", {
+          id: "claude-haiku-4-5-20251001",
+        }),
       ],
     },
-  })),
+    category: "third_party",
+    icon: "anthropic",
+    iconColor: "#D4915D",
+  },
+  {
+    name: "Gemini",
+    providerKey: "cc-switch-google",
+    websiteUrl: "https://ai.google.dev",
+    apiKeyUrl: "https://aistudio.google.com/app/apikey",
+    settingsConfig: {
+      name: "Gemini",
+      baseUrl: "https://generativelanguage.googleapis.com/v1beta",
+      api: "google-generative-ai",
+      apiKey: "",
+      models: [
+        piModel("google/gemini-3.6-flash", { id: "gemini-3.6-flash" }),
+        piModel("google/gemini-3.1-pro-preview", {
+          id: "gemini-3.1-pro-preview",
+        }),
+      ],
+    },
+    category: "third_party",
+    icon: "gemini",
+    iconColor: "#4285F4",
+  },
+  {
+    name: "Grok",
+    providerKey: "cc-switch-xai",
+    websiteUrl: "https://x.ai",
+    apiKeyUrl: "https://console.x.ai",
+    settingsConfig: {
+      name: "Grok",
+      baseUrl: "https://api.x.ai/v1",
+      api: "openai-responses",
+      apiKey: "",
+      models: [piModel("xai/grok-4.5", { id: "grok-4.5" })],
+    },
+    category: "third_party",
+    icon: "grok",
+    iconColor: "currentColor",
+  },
 ];
 
 function materializeVerifiedThinkingProfiles(

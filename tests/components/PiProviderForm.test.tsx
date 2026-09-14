@@ -775,6 +775,132 @@ describe("PiProviderForm", () => {
     ).not.toBeInTheDocument();
   });
 
+  it.each([
+    [
+      "OpenAI",
+      "cc-switch-openai",
+      "https://api.openai.com/v1",
+      "openai-responses",
+    ],
+    [
+      "Claude",
+      "cc-switch-anthropic",
+      "https://api.anthropic.com",
+      "anthropic-messages",
+    ],
+    [
+      "Gemini",
+      "cc-switch-google",
+      "https://generativelanguage.googleapis.com/v1beta",
+      "google-generative-ai",
+    ],
+    ["Grok", "cc-switch-xai", "https://api.x.ai/v1", "openai-responses"],
+  ])(
+    "offers the %s official API preset and saves its direct configuration",
+    async (name, providerKey, baseUrl, api) => {
+      const onSubmit = vi.fn().mockResolvedValue(undefined);
+      render(
+        <PiProviderForm
+          appId="pi"
+          submitLabel="Save official preset"
+          onSubmit={onSubmit}
+          onCancel={() => {}}
+        />,
+      );
+
+      const custom = screen.getByRole("button", {
+        name: "providerPreset.custom",
+      });
+      const preset = screen
+        .getByText(name, { selector: "span" })
+        .closest("button")!;
+      expect(custom.compareDocumentPosition(preset)).toBe(
+        Node.DOCUMENT_POSITION_FOLLOWING,
+      );
+      expect(preset).toHaveAttribute(
+        "title",
+        "providerForm.categoryThirdParty",
+      );
+      fireEvent.click(preset);
+      expect(screen.getByLabelText("Base URL")).toHaveValue(baseUrl);
+      expect(screen.getByLabelText("pi.form.credential")).toHaveValue("");
+      expect(
+        screen.queryByText(/浏览器登录|无需配置 API Key/),
+      ).not.toBeInTheDocument();
+      expect(onSubmit).not.toHaveBeenCalled();
+      fireEvent.change(screen.getByLabelText("pi.form.credential"), {
+        target: { value: "test-official-api-key" },
+      });
+      fireEvent.click(
+        screen.getByRole("button", { name: "Save official preset" }),
+      );
+
+      await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+      const submitted = onSubmit.mock.calls[0][0];
+      expect(submitted).toMatchObject({
+        providerKey,
+        name,
+        presetCategory: "third_party",
+      });
+      const config = JSON.parse(submitted.settingsConfig);
+      expect(config).toMatchObject({
+        baseUrl,
+        api,
+        apiKey: "test-official-api-key",
+      });
+      expect(config.models.length).toBeGreaterThan(0);
+      expect(
+        config.models.every((model: { id: string }) => !model.id.includes("/")),
+      ).toBe(true);
+      expect(submitted).not.toHaveProperty("piActivateModelId");
+
+      fireEvent.click(custom);
+      expect(screen.getByLabelText("Base URL")).toHaveValue("");
+      expect(screen.getByLabelText("pi.form.credential")).toHaveValue("");
+    },
+  );
+
+  it.each([
+    ["Token-AI", "cc-switch-token-ai", "https://tken.lol"],
+    ["MX-AI", "cc-switch-mx-ai", "https://mxzzz.xyz"],
+  ])(
+    "defaults %s to OpenAI Responses and saves matching fields",
+    async (name, providerKey, origin) => {
+      const onSubmit = vi.fn().mockResolvedValue(undefined);
+      render(
+        <PiProviderForm
+          appId="pi"
+          submitLabel="Save Responses preset"
+          onSubmit={onSubmit}
+          onCancel={() => {}}
+        />,
+      );
+
+      fireEvent.click(screen.getByText(name, { selector: "span" }));
+      expect(
+        document.querySelector("#pi-provider-api-select"),
+      ).toHaveTextContent("OpenAI Responses");
+      expect(screen.getByLabelText("Base URL")).toHaveValue(origin + "/v1");
+      expect(screen.getByLabelText("provider.websiteUrl")).toHaveValue(origin);
+      fireEvent.change(screen.getByLabelText("pi.form.credential"), {
+        target: { value: "test-responses-api-key" },
+      });
+      fireEvent.click(
+        screen.getByRole("button", { name: "Save Responses preset" }),
+      );
+
+      await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+      const submitted = onSubmit.mock.calls[0][0];
+      expect(submitted).toMatchObject({ providerKey, name });
+      expect(JSON.parse(submitted.settingsConfig)).toMatchObject({
+        api: "openai-responses",
+        baseUrl: origin + "/v1",
+        apiKey: "test-responses-api-key",
+        models: [{ id: "gpt-5.6-sol", thinkingLevelMap: { max: "max" } }],
+      });
+    },
+  );
+
   it("keeps preset model order without exposing a default-model field", async () => {
     const onSubmit = vi.fn().mockResolvedValue(undefined);
     render(

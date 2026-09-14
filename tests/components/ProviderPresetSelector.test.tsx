@@ -325,7 +325,7 @@ describe("ProviderPresetSelector pure helpers", () => {
 });
 
 describe("ProviderPresetSelector", () => {
-  it("将两个指定站点放在第一、第二，自定义配置在其后，并保留正确的选择 ID", async () => {
+  it("自定义配置始终排第一，两个指定站点紧随其后，并保留正确的选择 ID", async () => {
     const user = userEvent.setup();
     const onPresetChange = vi.fn();
     const entries: TestPresetEntry[] = [
@@ -343,21 +343,25 @@ describe("ProviderPresetSelector", () => {
         .slice(0, 3)
         .map((button) => button.textContent);
     expect(firstButtons()).toEqual([
+      "providerPreset.custom",
       "Token-AI",
       "MX-AI",
-      "providerPreset.custom",
     ]);
     await user.click(getSortButton());
     expect(firstButtons()).toEqual([
+      "providerPreset.custom",
       "Token-AI",
       "MX-AI",
-      "providerPreset.custom",
     ]);
+    await user.click(
+      screen.getByRole("button", { name: "providerPreset.custom" }),
+    );
+    expect(onPresetChange).toHaveBeenLastCalledWith("custom");
     await user.click(screen.getByRole("button", { name: "MX-AI" }));
     expect(onPresetChange).toHaveBeenLastCalledWith("mx-ai");
     await user.click(getSearchButton());
     await user.type(getSearchInput(), "MX-AI");
-    expect(firstButtons()).toEqual(["MX-AI", "providerPreset.custom"]);
+    expect(firstButtons()).toEqual(["providerPreset.custom", "MX-AI"]);
   });
 
   it("默认只展示官方预设和自定义配置，官方分类置顶", () => {

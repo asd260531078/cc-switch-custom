@@ -3756,13 +3756,106 @@ export const openclawProviderPresets: OpenClawProviderPreset[] = [
   ...featuredProviderSites.map<OpenClawProviderPreset>((site) => ({
     ...site.preset,
     settingsConfig: {
-      baseUrl: site.apiBaseUrl,
+      baseUrl: site.apiBaseUrl + "/v1",
+      apiKey: "",
+      api: "openai-responses",
+      models: [{ id: "gpt-5.6-sol", name: "GPT-5.6 Sol" }],
+    },
+  })),
+  {
+    name: "OpenAI",
+    websiteUrl: "https://openai.com",
+    apiKeyUrl: "https://platform.openai.com/api-keys",
+    settingsConfig: {
+      baseUrl: "https://api.openai.com/v1",
+      apiKey: "",
+      api: "openai-responses",
+      models: [
+        {
+          id: "gpt-5.6-sol",
+          name: "GPT-5.6 Sol",
+        },
+      ],
+    },
+    category: "third_party",
+    icon: "openai",
+    iconColor: "#00A67E",
+    suggestedDefaults: {
+      model: { primary: "openai/gpt-5.6-sol" },
+      modelCatalog: { "openai/gpt-5.6-sol": { alias: "GPT-5.6 Sol" } },
+    },
+  },
+  {
+    name: "Claude",
+    websiteUrl: "https://www.anthropic.com",
+    apiKeyUrl: "https://platform.claude.com/settings/keys",
+    settingsConfig: {
+      baseUrl: "https://api.anthropic.com",
       apiKey: "",
       api: "anthropic-messages",
       models: [
-        { id: "claude-sonnet-5", name: "Claude Sonnet 5" },
-        { id: "claude-opus-5", name: "Claude Opus 5" },
+        {
+          id: "claude-sonnet-5",
+          name: "Claude Sonnet 5",
+        },
+        {
+          id: "claude-opus-5",
+          name: "Claude Opus 5",
+        },
       ],
     },
-  })),
+    category: "third_party",
+    icon: "anthropic",
+    iconColor: "#D4915D",
+    suggestedDefaults: {
+      model: { primary: "anthropic/claude-sonnet-5" },
+      modelCatalog: {
+        "anthropic/claude-sonnet-5": { alias: "Sonnet" },
+        "anthropic/claude-opus-5": { alias: "Opus" },
+      },
+    },
+  },
+  {
+    name: "Gemini",
+    websiteUrl: "https://ai.google.dev",
+    apiKeyUrl: "https://aistudio.google.com/app/apikey",
+    settingsConfig: {
+      baseUrl: "https://generativelanguage.googleapis.com/v1beta",
+      apiKey: "",
+      api: "google-generative-ai",
+      models: [
+        {
+          id: "gemini-3.6-flash",
+          name: "Gemini 3.6 Flash",
+        },
+      ],
+    },
+    category: "third_party",
+    icon: "gemini",
+    iconColor: "#4285F4",
+    suggestedDefaults: {
+      model: { primary: "google/gemini-3.6-flash" },
+      modelCatalog: {
+        "google/gemini-3.6-flash": { alias: "Gemini Flash" },
+      },
+    },
+  },
+  {
+    name: "Grok",
+    websiteUrl: "https://x.ai",
+    apiKeyUrl: "https://console.x.ai",
+    settingsConfig: {
+      baseUrl: "https://api.x.ai/v1",
+      apiKey: "",
+      api: "openai-responses",
+      models: [{ id: "grok-4.5", name: "Grok 4.5" }],
+    },
+    category: "third_party",
+    icon: "grok",
+    iconColor: "currentColor",
+    suggestedDefaults: {
+      model: { primary: "xai/grok-4.5" },
+      modelCatalog: { "xai/grok-4.5": { alias: "Grok 4.5" } },
+    },
+  },
 ];

@@ -4,6 +4,7 @@
 import { featuredProviderSites } from "./featuredProviderSites";
 import { ProviderCategory } from "../types";
 import type {
+  ClaudeApiKeyField,
   CodexApiFormat,
   CodexCatalogModel,
   CodexChatReasoning,
@@ -34,6 +35,7 @@ export interface CodexProviderPreset {
   iconColor?: string; // 图标颜色
   // Codex API 格式
   apiFormat?: CodexApiFormat;
+  apiKeyField?: ClaudeApiKeyField;
   // 仅用于区分预设来源；ChatGPT/Codex 与 xAI/Grok 的认证流程彼此独立。
   providerType?: "codex_oauth" | "xai_oauth";
   // OAuth 预设：隐藏 API Key 输入，保存前要求已登录托管账号
@@ -2783,6 +2785,7 @@ base_url = "https://cc-api.pipellm.ai/v1"`,
   },
   ...featuredProviderSites.map<CodexProviderPreset>((site) => ({
     ...site.preset,
+    apiFormat: "openai_responses",
     auth: generateThirdPartyAuth(""),
     config: generateThirdPartyConfig(
       site.preset.name,
@@ -2792,4 +2795,75 @@ base_url = "https://cc-api.pipellm.ai/v1"`,
     ),
     endpointCandidates: [site.apiBaseUrl + "/v1"],
   })),
+  {
+    name: "OpenAI",
+    websiteUrl: "https://openai.com",
+    apiKeyUrl: "https://platform.openai.com/api-keys",
+    category: "third_party",
+    auth: generateThirdPartyAuth(""),
+    config: generateThirdPartyConfig(
+      "OpenAI",
+      "https://api.openai.com/v1",
+      "gpt-5.6-sol",
+      {
+        requiresOpenAiAuth: false,
+      },
+    ),
+    apiFormat: "openai_responses",
+    modelCatalog: modelCatalog([
+      "gpt-5.6-sol",
+      "gpt-5.6-terra",
+      "gpt-5.6-luna",
+    ]),
+    endpointCandidates: ["https://api.openai.com/v1"],
+    icon: "openai",
+    iconColor: "#00A67E",
+  },
+  {
+    name: "Claude",
+    websiteUrl: "https://www.anthropic.com",
+    apiKeyUrl: "https://platform.claude.com/settings/keys",
+    category: "third_party",
+    auth: generateThirdPartyAuth(""),
+    config: generateThirdPartyConfig(
+      "Claude",
+      "https://api.anthropic.com",
+      "claude-sonnet-5",
+      {
+        requiresOpenAiAuth: false,
+      },
+    ),
+    apiFormat: "anthropic",
+    apiKeyField: "ANTHROPIC_API_KEY",
+    modelCatalog: modelCatalog([
+      "claude-sonnet-5",
+      "claude-opus-5",
+      "claude-haiku-4-5-20251001",
+    ]),
+    endpointCandidates: ["https://api.anthropic.com"],
+    icon: "anthropic",
+    iconColor: "#D4915D",
+  },
+  {
+    name: "Gemini",
+    websiteUrl: "https://ai.google.dev",
+    apiKeyUrl: "https://aistudio.google.com/app/apikey",
+    category: "third_party",
+    auth: generateThirdPartyAuth(""),
+    config: generateThirdPartyConfig(
+      "Gemini",
+      "https://generativelanguage.googleapis.com/v1beta/openai",
+      "gemini-3.6-flash",
+      {
+        requiresOpenAiAuth: false,
+      },
+    ),
+    apiFormat: "openai_chat",
+    modelCatalog: modelCatalog(["gemini-3.6-flash", "gemini-3.1-pro-preview"]),
+    endpointCandidates: [
+      "https://generativelanguage.googleapis.com/v1beta/openai",
+    ],
+    icon: "gemini",
+    iconColor: "#4285F4",
+  },
 ];

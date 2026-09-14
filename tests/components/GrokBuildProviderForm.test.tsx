@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { parse as parseToml } from "smol-toml";
 import { describe, expect, it, vi } from "vitest";
@@ -21,6 +21,55 @@ vi.mock("@/components/JsonEditor", () => ({
 }));
 
 describe("GrokBuildProviderForm", () => {
+  it.each([
+    ["OpenAI", "https://api.openai.com/v1", "openai_responses", "gpt-5.6-sol"],
+    ["Claude", "https://api.anthropic.com", "anthropic", "claude-sonnet-5"],
+    [
+      "Gemini",
+      "https://generativelanguage.googleapis.com/v1beta/openai",
+      "openai_chat",
+      "gemini-3.6-flash",
+    ],
+    ["Token-AI", "https://tken.lol/v1", "openai_responses", "grok-4.5"],
+    ["MX-AI", "https://mxzzz.xyz/v1", "openai_responses", "grok-4.5"],
+  ])(
+    "selects %s and saves its upstream protocol with a Responses client",
+    async (name, baseUrl, apiFormat, model) => {
+      const onSubmit = vi.fn();
+      const { container } = render(
+        <GrokBuildProviderForm
+          submitLabel="Save"
+          onSubmit={onSubmit}
+          onCancel={() => {}}
+        />,
+      );
+      fireEvent.click(
+        screen.getByText(name, { selector: "span" }).closest("button")!,
+      );
+      expect(container.querySelector("#codexBaseUrl")).toHaveValue(baseUrl);
+      expect(screen.getByLabelText("API Key")).toHaveValue("");
+      fireEvent.change(screen.getByLabelText("API Key"), {
+        target: { value: "sk-official-test" },
+      });
+      fireEvent.click(screen.getByRole("button", { name: "Save" }));
+      await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+      const submitted = onSubmit.mock.calls[0][0];
+      const config = parseToml(
+        JSON.parse(submitted.settingsConfig).config,
+      ) as any;
+      expect(submitted.presetCategory).toBe("third_party");
+      expect(submitted.meta.apiFormat).toBe(apiFormat);
+      if (name === "Claude")
+        expect(submitted.meta.apiKeyField).toBe("ANTHROPIC_API_KEY");
+      expect(config.model[config.models.default]).toMatchObject({
+        base_url: baseUrl,
+        model,
+        api_key: "sk-official-test",
+        api_backend: "responses",
+      });
+    },
+  );
+
   it("keeps Grok official presets, removes relays, and applies the xAI API preset", async () => {
     const user = userEvent.setup();
     const { container } = render(

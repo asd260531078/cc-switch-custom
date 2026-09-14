@@ -275,6 +275,7 @@ export function GrokBuildProviderForm({
     setApiKey(presetApiKey);
     setUpstreamModel(presetModel);
     setApiFormat(presetApiFormat);
+    setAnthropicAuthField(preset.apiKeyField ?? "ANTHROPIC_AUTH_TOKEN");
     setPresetEndpoints(preset.endpointCandidates ?? []);
     setRawConfig(
       buildGrokBuildConfig({

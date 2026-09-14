@@ -6,6 +6,7 @@ import { getFeaturedProviderPriority } from "./featuredProviderSites";
 const officialProviderHosts = new Set([
   "openai.com",
   "chatgpt.com",
+  "www.anthropic.com",
   "ai.google.dev",
   "github.com",
   "x.ai",

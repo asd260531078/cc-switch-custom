@@ -9,12 +9,11 @@
  * - 不含官方 / 托管 OAuth 预设：Grok CLI 自带 xAI 订阅登录，官方态走
  *   独立的 "Grok Official" 条目（对应 providers_seed.rs 的 seed，
  *   空 config = 不写自定义模型表）。
- * - 不含国产模型官方直连（cn_official）与纯开源模型托管站
- *   （SiliconFlow / ModelScope / Novita / Nvidia / AtlasCloud）：
- *   这些上游没有 Grok 模型，无法在 Grok CLI 中使用。
+ * - 官方 API Key 预设按上游提供模型，兼容格式沿用本地路由转换。
+ * - 国产模型官方直连（cn_official）与纯开源模型托管站暂未收录。
  * - OpenCode Go 上游自 2026-08 起已提供 grok-4.5，但暂仍不收录：
  *   订阅制网关是否纳入 Grok 预设属产品决策，收录前需单独评估。
- * - 只收聚合站与第三方中转站，默认模型统一为 grok-4.5；
+ * - 聚合站与第三方中转站的默认模型为 grok-4.5；
  *   OpenRouter 系命名空间的路由站用 "x-ai/grok-4.5"。
  *
  * config 字段沿用 Codex 风格 TOML 作为载体：Grok 表单只从中提取
@@ -23,7 +22,7 @@
  */
 import { featuredProviderSites } from "./featuredProviderSites";
 import type { ProviderCategory } from "../types";
-import type { CodexApiFormat } from "../types";
+import type { ClaudeApiKeyField, CodexApiFormat } from "../types";
 import { GROK_BUILD_DEFAULT_MODEL } from "../utils/grokBuildConfig";
 
 export interface GrokBuildProviderPreset {
@@ -41,6 +40,7 @@ export interface GrokBuildProviderPreset {
   icon?: string;
   iconColor?: string;
   apiFormat?: CodexApiFormat;
+  apiKeyField?: ClaudeApiKeyField;
 }
 
 // 官方条目与后端 seed（providers_seed.rs 的 "Grok Official"）对应：
@@ -610,8 +610,60 @@ export const grokBuildProviderPresets: GrokBuildProviderPreset[] = [
   },
   ...featuredProviderSites.map<GrokBuildProviderPreset>((site) => ({
     ...site.preset,
+    apiFormat: "openai_responses",
     auth: grokAuth(),
     config: grokPresetConfig(site.preset.name, site.apiBaseUrl + "/v1"),
     endpointCandidates: [site.apiBaseUrl + "/v1"],
   })),
+  {
+    name: "OpenAI",
+    websiteUrl: "https://openai.com",
+    apiKeyUrl: "https://platform.openai.com/api-keys",
+    category: "third_party",
+    auth: grokAuth(),
+    config: grokPresetConfig(
+      "OpenAI",
+      "https://api.openai.com/v1",
+      "gpt-5.6-sol",
+    ),
+    apiFormat: "openai_responses",
+    endpointCandidates: ["https://api.openai.com/v1"],
+    icon: "openai",
+    iconColor: "#00A67E",
+  },
+  {
+    name: "Claude",
+    websiteUrl: "https://www.anthropic.com",
+    apiKeyUrl: "https://platform.claude.com/settings/keys",
+    category: "third_party",
+    auth: grokAuth(),
+    config: grokPresetConfig(
+      "Claude",
+      "https://api.anthropic.com",
+      "claude-sonnet-5",
+    ),
+    apiFormat: "anthropic",
+    apiKeyField: "ANTHROPIC_API_KEY",
+    endpointCandidates: ["https://api.anthropic.com"],
+    icon: "anthropic",
+    iconColor: "#D4915D",
+  },
+  {
+    name: "Gemini",
+    websiteUrl: "https://ai.google.dev",
+    apiKeyUrl: "https://aistudio.google.com/app/apikey",
+    category: "third_party",
+    auth: grokAuth(),
+    config: grokPresetConfig(
+      "Gemini",
+      "https://generativelanguage.googleapis.com/v1beta/openai",
+      "gemini-3.6-flash",
+    ),
+    apiFormat: "openai_chat",
+    endpointCandidates: [
+      "https://generativelanguage.googleapis.com/v1beta/openai",
+    ],
+    icon: "gemini",
+    iconColor: "#4285F4",
+  },
 ];

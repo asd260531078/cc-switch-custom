@@ -49,9 +49,18 @@ describe("grokBuildProviderPresets", () => {
     }
   });
 
-  it("uses a Grok default model on every preset", () => {
+  it("uses upstream models for official APIs and Grok models for relays", () => {
+    const officialModels: Record<string, string> = {
+      OpenAI: "gpt-5.6-sol",
+      Claude: "claude-sonnet-5",
+      Gemini: "gemini-3.6-flash",
+    };
     for (const preset of grokBuildProviderPresets) {
       const model = extractCodexModelName(preset.config);
+      if (officialModels[preset.name]) {
+        expect(model, preset.name).toBe(officialModels[preset.name]);
+        continue;
+      }
       expect(
         model === GROK_BUILD_DEFAULT_MODEL || model === "x-ai/grok-4.5",
         `${preset.name}: ${model}`,

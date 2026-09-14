@@ -17,26 +17,39 @@ import {
   type AnyPreset,
 } from "@/components/providers/forms/ProviderPresetSelector";
 
-const catalogs: [string, AnyPreset[], string][] = [
-  ["Claude Code", providerPresets, "Claude Official"],
-  ["Claude Desktop", claudeDesktopProviderPresets, "Claude Desktop Official"],
-  ["Codex", codexProviderPresets, "OpenAI Official"],
-  ["Gemini", geminiProviderPresets, "Google Official"],
-  ["OpenCode", opencodeProviderPresets, "Kimi"],
-  ["OpenClaw", openclawProviderPresets, "Kimi"],
-  ["Hermes", hermesProviderPresets, "Kimi"],
-  ["Pi", piProviderPresets, "Kimi"],
+const directNames = ["OpenAI", "Claude", "Gemini", "Grok"];
+const catalogs: [string, AnyPreset[], string[]][] = [
+  [
+    "Claude Code",
+    providerPresets,
+    ["Claude Official", "OpenAI", "Claude", "Gemini Native", "Grok"],
+  ],
+  [
+    "Claude Desktop",
+    claudeDesktopProviderPresets,
+    ["Claude Desktop Official", "OpenAI", "Claude", "Gemini Native", "Grok"],
+  ],
+  [
+    "Codex",
+    codexProviderPresets,
+    ["OpenAI Official", "OpenAI", "Claude", "Gemini", "xAI (Grok)"],
+  ],
+  ["Gemini", geminiProviderPresets, ["Google Official", "Gemini"]],
+  ["OpenCode", opencodeProviderPresets, directNames],
+  ["OpenClaw", openclawProviderPresets, directNames],
+  ["Hermes", hermesProviderPresets, directNames],
+  ["Pi", piProviderPresets, directNames],
   [
     "Grok Build",
     [grokBuildOfficialPreset, ...grokBuildProviderPresets],
-    "Grok Official",
+    ["Grok Official", "OpenAI", "Claude", "Gemini", "xAI (Grok)"],
   ],
 ];
 
 describe("official provider preset visibility", () => {
   it.each(catalogs)(
     "%s keeps official presets and excludes relay presets without changing IDs or stored templates",
-    (_, presets, officialName) => {
+    (_, presets, officialNames) => {
       const entries = presets.map((preset, index) => ({
         id: String(index),
         preset,
@@ -48,9 +61,20 @@ describe("official provider preset visibility", () => {
           sortMode,
           t: (key) => key,
         });
-        expect(
-          visible.some((entry) => entry.preset.name === officialName),
-        ).toBe(true);
+        for (const officialName of officialNames) {
+          expect(
+            visible.some((entry) => entry.preset.name === officialName),
+            officialName,
+          ).toBe(true);
+          expect(
+            getVisiblePresetEntries(entries, {
+              query: officialName,
+              sortMode,
+              t: (key) => key,
+            }).some((entry) => entry.preset.name === officialName),
+            officialName,
+          ).toBe(true);
+        }
         const relay = presets.find((preset) => preset.name === "PackyCode");
         expect(relay).toBeDefined();
         expect(visible.some((entry) => entry.preset === relay)).toBe(false);
