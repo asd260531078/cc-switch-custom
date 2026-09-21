@@ -59,6 +59,14 @@ Claude Code、Claude Desktop、Codex、Grok Build、OpenCode、OpenClaw、Hermes
 
 没有对应上游缺陷，这是本项目的展示偏好。同步官方时检查 README 和 FUNDING，避免重新引入赞助入口；用户恢复展示，或官方已移除相同内容时，可撤销对应定制差异。验证四种语言的相邻章节和链接结构、赞助入口残留以及代码目录无改动，无需运行应用测试。
 
+## CI-COST-1：按改动范围运行检查
+
+`.github/workflows/ci.yml` 对 main 推送和 PR 使用相同的文件范围筛选：前端源码、测试和依赖变动执行前端检查；`src-tauri/**`、Rust 工具链及 Cargo 配置变动执行 Linux、Windows、macOS 后端检查和 Windows/WSL2 原子写入契约。main 推送比较推送前后的提交，覆盖一次推送中的全部提交。修改 CI 工作流本身执行全部检查；纯文档及其他工作流变动仅执行文件范围检测。需要完整验证时，在 Actions 的 CI 页面使用 Run workflow。
+
+WSL2 完整套件曾连续 10 次运行到 90 分钟上限，取消每日调度，保留 `.github/workflows/wsl2-nightly.yml` 的历史路径，显示名改为 `WSL2 Full Suite (Manual)`，仅供手动诊断；同一分支的新运行会取消旧运行。此项只消除自动重复消耗，没有修复完整套件超时。前端检查上限 15 分钟，常规后端检查上限 45 分钟；正式 Windows/macOS 发布、签名和更新元数据流程保持原有行为。
+
+以后同步官方工作流时保留以上触发策略；只有完整 WSL2 套件恢复稳定、且维护者决定恢复定时检查时再增加调度。验证使用工作流语法检查及文件范围样例，无需为触发条件修改重新构建应用；GitHub 实际执行仍须在推送后核验。
+
 ## DIST-1：本仓库安装包与更新通道
 
 复用 `.github/workflows/release.yml` 的官方构建、打包及 updater 元数据流程，首批发布 Windows x86_64 MSI/绿色版与 macOS 12+ Universal DMG/ZIP。缺少 Apple 证书时使用 ad-hoc 签名并验证两种架构，不能宣称已公证；Windows 无 Authenticode 证书。发布先保留草稿，检查 CI、安装包及更新元数据后再由维护者公开。

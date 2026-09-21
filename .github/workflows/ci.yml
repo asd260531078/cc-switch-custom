@@ -5,6 +5,7 @@ on:
     branches: [main]
   push:
     branches: [main]
+  workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -14,6 +15,7 @@ jobs:
   changes:
     name: Detect changed areas
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     permissions:
       contents: read
       pull-requests: read
@@ -22,15 +24,18 @@ jobs:
       backend: ${{ steps.filter.outputs.backend }}
     steps:
       # On pull_request the filter reads changed files via the API (no checkout);
-      # on push it needs a local git history to diff against.
+      # on push/manual runs it needs a local git history to diff against.
       - name: Checkout
-        if: github.event_name == 'push'
+        if: github.event_name != 'pull_request'
         uses: actions/checkout@v6
 
       - name: Detect changed paths
         id: filter
         uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
         with:
+          # Compare main pushes with the pre-push commit, including batched commits.
+          # PRs use their base branch automatically; manual runs force all jobs below.
+          base: ${{ github.ref_name }}
           filters: |
             frontend:
               - "src/**"
@@ -46,18 +51,20 @@ jobs:
               - "tailwind.config.cjs"
               - "postcss.config.cjs"
               - "components.json"
-              - ".github/workflows/**"
+              - ".node-version"
+              - ".github/workflows/ci.yml"
             backend:
               - "src-tauri/**"
+              - ".cargo/**"
               - "rust-toolchain.toml"
-              - ".github/workflows/**"
+              - ".github/workflows/ci.yml"
 
   frontend:
     name: Frontend Checks
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: changes
-    # Pushes to main always run everything: they keep the caches that PRs restore from warm.
-    if: github.event_name != 'pull_request' || needs.changes.outputs.frontend == 'true'
+    if: github.event_name == 'workflow_dispatch' || needs.changes.outputs.frontend == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -102,8 +109,9 @@ jobs:
   backend:
     name: Backend Checks
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
     needs: changes
-    if: github.event_name != 'pull_request' || needs.changes.outputs.backend == 'true'
+    if: github.event_name == 'workflow_dispatch' || needs.changes.outputs.backend == 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -157,7 +165,7 @@ jobs:
     runs-on: windows-2025
     timeout-minutes: 45
     needs: changes
-    if: github.event_name != 'pull_request' || needs.changes.outputs.backend == 'true'
+    if: github.event_name == 'workflow_dispatch' || needs.changes.outputs.backend == 'true'
     permissions:
       contents: read
     steps:

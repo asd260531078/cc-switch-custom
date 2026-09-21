@@ -1,12 +1,14 @@
-name: WSL2 Nightly
+name: WSL2 Full Suite (Manual)
 
-# The full backend suite takes 50+ minutes on a \\wsl.localhost 9P filesystem,
-# so it runs nightly instead of per PR. The per-PR gate in ci.yml only runs the
-# atomic-write contract test against the same WSL2-backed environment.
+# The full suite repeatedly reaches the 90-minute limit on the WSL2 filesystem.
+# Keep it opt-in for diagnosis; backend changes still run the focused Windows/WSL2
+# atomic-write contract in ci.yml. Keep this filename to preserve workflow history.
 on:
-  schedule:
-    - cron: "23 18 * * *" # 02:23 Beijing time
   workflow_dispatch:
+
+concurrency:
+  group: wsl2-full-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   backend-windows-wsl2-full:
