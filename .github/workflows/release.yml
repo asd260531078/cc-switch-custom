@@ -52,7 +52,7 @@ jobs:
           node -e 'const fs=require("fs"); const c=JSON.parse(fs.readFileSync("src-tauri/tauri.conf.json")); if ("v"+c.version !== process.env.RELEASE_TAG) process.exit(1)'
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: '20'
 
