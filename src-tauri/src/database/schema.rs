@@ -3745,6 +3745,40 @@ mod tests {
     }
 
     #[test]
+    fn migrate_v18_to_v19_preserves_existing_mcp_and_skill_flags() -> Result<(), AppError> {
+        let conn = Connection::open_in_memory()?;
+        conn.execute_batch(
+            "CREATE TABLE mcp_servers (
+                id TEXT PRIMARY KEY,
+                enabled_codex BOOLEAN NOT NULL DEFAULT 0
+            );
+            CREATE TABLE skills (
+                id TEXT PRIMARY KEY,
+                enabled_codex BOOLEAN NOT NULL DEFAULT 0
+            );
+            INSERT INTO mcp_servers (id, enabled_codex) VALUES ('mcp-1', 1);
+            INSERT INTO skills (id, enabled_codex) VALUES ('skill-1', 1);",
+        )?;
+        Database::set_user_version(&conn, 18)?;
+
+        Database::apply_schema_migrations_on_conn(&conn)?;
+        Database::apply_schema_migrations_on_conn(&conn)?;
+
+        assert_eq!(Database::get_user_version(&conn)?, SCHEMA_VERSION);
+        for (table, id) in [("mcp_servers", "mcp-1"), ("skills", "skill-1")] {
+            assert!(Database::has_column(&conn, table, "enabled_mcode")?);
+            let values: (i64, i64) = conn.query_row(
+                &format!("SELECT enabled_codex, enabled_mcode FROM {table} WHERE id = ?1"),
+                [id],
+                |row| Ok((row.get(0)?, row.get(1)?)),
+            )?;
+            assert_eq!(values, (1, 0), "{table} flags after migration");
+        }
+
+        Ok(())
+    }
+
+    #[test]
     fn migrate_v15_to_v16_resets_only_codex_session_usage() -> Result<(), AppError> {
         let conn = Connection::open_in_memory()?;
         Database::create_tables_on_conn(&conn)?;

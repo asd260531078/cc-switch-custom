@@ -621,7 +621,7 @@ jobs:
           draft: true
           prerelease: false
           body: |
-            基于官方 CC Switch v3.20.2 的定制版，包含 Claude Desktop 一键导入修复及仓库赞助宣传移除。
+            CC Switch Custom 定制版。详细变更、数据库升级与回退说明见[中文发布说明](https://github.com/${{ github.repository }}/blob/${{ env.RELEASE_TAG }}/docs/release-notes/${{ env.RELEASE_TAG }}-zh.md)。
 
             - macOS 12+（Apple Silicon / Intel）：下载 `CC-Switch-${{ env.RELEASE_TAG }}-macOS.dmg`。
             - Windows 10/11 64 位：下载 `CC-Switch-${{ env.RELEASE_TAG }}-Windows.msi`；绿色版使用 `Windows-Portable.zip`。
