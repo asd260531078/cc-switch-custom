@@ -90,6 +90,15 @@ export const piModelCatalog = {
       maxTokens: 128_000,
     },
   },
+  "anthropic/claude-opus-5-5": {
+    capabilities: {
+      name: "Claude Opus 5.5",
+      reasoning: true,
+      input: ["text", "image"],
+      contextWindow: 1_000_000,
+      maxTokens: 128_000,
+    },
+  },
   "anthropic/claude-sonnet-4.6": {
     capabilities: {
       name: "Claude Sonnet 4.6",
@@ -198,13 +207,13 @@ export const piModelCatalog = {
       maxTokens: 65_536,
     },
   },
-  "inclusionai/ling-2.5-1t": {
+  "inclusionai/ling-2.6-1t": {
     capabilities: {
-      name: "Ling 2.5-1T",
+      name: "Ling 2.6-1T",
       reasoning: false,
       input: ["text"],
-      contextWindow: 1_000_000,
-      maxTokens: 16_384,
+      contextWindow: 262_144,
+      maxTokens: 32_768,
     },
   },
   "longcat/longcat-2.0": {
@@ -405,6 +414,24 @@ export const piModelCatalog = {
       maxTokens: 128_000,
     },
   },
+  "openai/gpt-6-luna": {
+    capabilities: {
+      name: "GPT-6 Luna",
+      reasoning: true,
+      input: ["text", "image"],
+      contextWindow: 1_050_000,
+      maxTokens: 128_000,
+    },
+  },
+  "openai/gpt-6-sol": {
+    capabilities: {
+      name: "GPT-6 Sol",
+      reasoning: true,
+      input: ["text", "image"],
+      contextWindow: 1_050_000,
+      maxTokens: 128_000,
+    },
+  },
   "openai/o3": {
     capabilities: {
       name: "o3",
@@ -474,6 +501,16 @@ export const piModelCatalog = {
       reasoning: true,
       input: ["text", "image"],
       // 983_616 而非 1M：QwenCloud 官方 Codex catalog 与 OpenClaw 配置同值
+      contextWindow: 983_616,
+      maxTokens: 131_072,
+    },
+  },
+  "qwen/qwen3.8-flash": {
+    capabilities: {
+      name: "Qwen3.8 Flash",
+      reasoning: true,
+      // 官方 Codex catalog 未单列 flash 的输入模态，按同族 3.8-max 处理
+      input: ["text", "image"],
       contextWindow: 983_616,
       maxTokens: 131_072,
     },

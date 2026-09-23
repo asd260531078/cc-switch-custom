@@ -2,13 +2,24 @@
 
 ## 基线与维护约定
 
-- 本项目仓库：[asd260531078/cc-switch-custom](https://github.com/asd260531078/cc-switch-custom)。`origin` 用于本项目上传，`upstream` 指向官方仓库；默认推送目标为 `origin`。
+- 本项目仓库：[asd260531078/cc-switch-custom](https://github.com/asd260531078/cc-switch-custom)。`origin` 用于本项目上传；官方仓库为 `farion1231/cc-switch`，同步时按官方标签抓取并核实，不将其作为推送目标。
 - 仓库初始化时仅有 Apache 2.0 许可证，其[原始记录](https://github.com/asd260531078/cc-switch-custom/blob/186fdb999d30a77aa95106bd05f7e5758004299c/LICENSE)保留在 Git 历史中；合入官方源码后，根目录 `LICENSE` 沿用官方 MIT 及原版权声明。
 - 上游唯一基线：[farion1231/cc-switch](https://github.com/farion1231/cc-switch)。本地起点为官方 `v3.20.2` / `f3b18df12007d0fd79fd8ad8d310880664015197`，分支 `codex/fix-claude-desktop-deeplink`。
+- 当前代码已合入官方 `v3.20.4` / `43e1d99084ed9b2f5dc252fd35c5adaf29d6876e`；本仓库待发布版本号为 `3.20.206`。这只是本地代码状态，不代表 GitHub 已推送、安装包已构建或用户设备已升级。
 - 官方优先、定制最小化：保留目录、接口、配置与业务行为；优先复用官方能力，不做无关重构、格式化或依赖升级。按功能维护可独立撤销的差异。
 - 每次修复或同步前重新检查最新稳定版、相关提交和 PR 状态，区分已发布、已合并、未合并。先验证需求、配置和数据兼容，再让官方接管；部分覆盖时只保留未覆盖部分。不能因名称相同或发生冲突就删掉必要行为。
 - 冲突逐项按功能解决，不整文件覆盖。涉及实际用户数据时先备份并明确迁移、回滚。同步后更新本表、删除失效兼容代码，再执行对应回归；不保证未经验证的未来版本兼容。
-- 源码上传及本次 macOS / Windows 安装包构建发布已获授权，目标为本项目仓库。更新本机已安装应用及修改真实用户配置不在本次范围内。
+- 历史版本的上传与构建发布授权只适用于对应发布任务；本次官方同步不自动授权推送、发布、安装或改动真实用户配置。
+
+## UPSTREAM-3.20.4：官方同步与新模型导入
+
+合入官方 v3.20.3、v3.20.4 的修复和 MiniMax Code 支持，保留本项目的 Claude Desktop/Pi 深链、外部 Logo、供应商预设顺序、赞助展示取舍和独立更新源。官方 v3.20.4 将数据库 schema 从 18 升到 19；首次打开真实旧库前应在应用设置中额外导出/备份，回退旧版时按官方备份恢复旧 schema 数据，不直接用新库覆盖旧版。
+
+官方 API 直连预设的模型目录补入 `gpt-6-sol`、`gpt-6-luna` 和 `claude-opus-5-5`；已有默认模型与已保存供应商配置不自动改写。Pi 的能力与思考档位使用官方模型规格，深链导入保留精确模型 ID。应用内用量定价新增官方标准价的 seed 行，只补缺失行，保留用户自定义价；长上下文、Fast、区域和批处理档价不由现有单行定价表表达。
+
+模型 ID、上下文与价格依据：[GPT-6 Sol](https://developers.openai.com/api/docs/models/gpt-6-sol)、[GPT-6 Luna](https://developers.openai.com/api/docs/models/gpt-6-luna)、[Claude 模型目录](https://platform.claude.com/docs/en/models/overview)。深链仍使用原有客户端协议和用户链接指定的端点；供应商是否开放这些模型，需要真实端点验证。本站之外的链接生成器如仍发送旧模型 ID，须由其维护者在对应项目单独更新。
+
+本地验证（2026-09-23）：前端类型与格式检查、renderer 构建通过；前端单测 1270 项通过；Rust 库测试 2942 项通过、9 项原有忽略，深链导入/导入导出/供应商服务集成测试合计 82 项通过；`cargo fmt --check`、`cargo clippy --locked --all-targets -- -D warnings` 通过。测试使用内存数据库及隔离 HOME。未进行 Windows 10/11 实机安装、真实 API 请求、真实用户数据库升级或发布包验收。
 
 ## CD-DL-1：Claude Desktop 一键导入
 

@@ -208,6 +208,12 @@ export const piThinkingBindings: readonly PiThinkingBinding[] = [
     modelCompat: { forceAdaptiveThinking: true },
   },
   {
+    catalogKey: "anthropic/claude-opus-5-5",
+    api: "anthropic-messages",
+    profileId: "xhighAndMax",
+    modelCompat: { forceAdaptiveThinking: true },
+  },
+  {
     catalogKey: "anthropic/claude-sonnet-5",
     api: "anthropic-messages",
     profileId: "xhighAndMax",
@@ -285,6 +291,16 @@ export const piThinkingBindings: readonly PiThinkingBinding[] = [
   },
   {
     catalogKey: "openai/gpt-5.6-terra",
+    api: "openai-responses",
+    profileId: "openaiResponsesGpt56",
+  },
+  {
+    catalogKey: "openai/gpt-6-luna",
+    api: "openai-responses",
+    profileId: "openaiResponsesGpt56",
+  },
+  {
+    catalogKey: "openai/gpt-6-sol",
     api: "openai-responses",
     profileId: "openaiResponsesGpt56",
   },

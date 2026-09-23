@@ -301,6 +301,84 @@ fn test_parse_grokbuild_provider() {
 }
 
 #[test]
+fn new_official_model_ids_survive_provider_deeplink_import() {
+    use super::provider::build_provider_from_request;
+
+    for (app, models) in [
+        (
+            AppType::Claude,
+            &["gpt-6-sol", "gpt-6-luna", "claude-opus-5-5"][..],
+        ),
+        (AppType::ClaudeDesktop, &["claude-opus-5-5"][..]),
+        (
+            AppType::Codex,
+            &["gpt-6-sol", "gpt-6-luna", "claude-opus-5-5"][..],
+        ),
+        (
+            AppType::GrokBuild,
+            &["gpt-6-sol", "gpt-6-luna", "claude-opus-5-5"][..],
+        ),
+        (
+            AppType::OpenCode,
+            &["gpt-6-sol", "gpt-6-luna", "claude-opus-5-5"][..],
+        ),
+        (
+            AppType::OpenClaw,
+            &["gpt-6-sol", "gpt-6-luna", "claude-opus-5-5"][..],
+        ),
+        (
+            AppType::Hermes,
+            &["gpt-6-sol", "gpt-6-luna", "claude-opus-5-5"][..],
+        ),
+        (
+            AppType::Pi,
+            &["gpt-6-sol", "gpt-6-luna", "claude-opus-5-5"][..],
+        ),
+    ] {
+        for &model in models {
+            let mut url = url::Url::parse("ccswitch://v1/import").unwrap();
+            url.query_pairs_mut().extend_pairs([
+                ("resource", "provider"),
+                ("app", app.as_str()),
+                ("name", "Model import"),
+                ("endpoint", "https://api.example.com/v1"),
+                ("apiKey", "sk-fixture"),
+                ("model", model),
+            ]);
+            let request = parse_deeplink_url(url.as_str()).unwrap();
+            let provider = build_provider_from_request(&app, &request).unwrap();
+            let config = &provider.settings_config;
+            match &app {
+                AppType::Claude | AppType::ClaudeDesktop => {
+                    assert_eq!(config["env"]["ANTHROPIC_MODEL"], model);
+                    if app == AppType::ClaudeDesktop {
+                        assert!(provider
+                            .meta
+                            .as_ref()
+                            .unwrap()
+                            .claude_desktop_model_routes
+                            .contains_key(model));
+                    }
+                }
+                AppType::Codex => {
+                    let document: toml::Value = config["config"].as_str().unwrap().parse().unwrap();
+                    assert_eq!(document["model"].as_str(), Some(model));
+                }
+                AppType::GrokBuild => {
+                    let document: toml::Value = config["config"].as_str().unwrap().parse().unwrap();
+                    assert_eq!(document["models"]["default"].as_str(), Some(model));
+                }
+                AppType::OpenCode => assert!(config["models"].get(model).is_some()),
+                AppType::OpenClaw | AppType::Hermes | AppType::Pi => {
+                    assert_eq!(config["models"][0]["id"], model);
+                }
+                _ => unreachable!(),
+            }
+        }
+    }
+}
+
+#[test]
 fn test_parse_invalid_scheme() {
     let url = "https://v1/import?resource=provider&app=claude&name=Test";
 
