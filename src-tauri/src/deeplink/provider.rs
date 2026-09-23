@@ -543,12 +543,37 @@ fn build_codex_settings(request: &DeepLinkImportRequest) -> serde_json::Value {
         provider_display_name
     };
 
-    // Model name: use deeplink model or default
+    // A link can declare a default model and, separately, the models its
+    // endpoint offers. Do not invent a catalog for legacy single-model links.
     let model_name = request
         .model
         .as_deref()
+        .map(str::trim)
+        .filter(|model| !model.is_empty())
+        .or_else(|| {
+            request.models.as_ref().and_then(|models| {
+                models
+                    .iter()
+                    .map(String::as_str)
+                    .map(str::trim)
+                    .find(|model| !model.is_empty())
+            })
+        })
         .unwrap_or("gpt-5-codex")
         .to_string();
+
+    let mut catalog_models = Vec::<String>::new();
+    if let Some(models) = &request.models {
+        for model in models {
+            let model = model.trim();
+            if !model.is_empty() && !catalog_models.iter().any(|entry| entry == model) {
+                catalog_models.push(model.to_string());
+            }
+        }
+        if !catalog_models.is_empty() && !catalog_models.contains(&model_name) {
+            catalog_models.insert(0, model_name.clone());
+        }
+    }
 
     // Endpoint: normalize trailing slashes (use primary endpoint only)
     let endpoint = get_primary_endpoint(request)
@@ -557,14 +582,14 @@ fn build_codex_settings(request: &DeepLinkImportRequest) -> serde_json::Value {
         .to_string();
 
     let provider_display_name = toml_edit::Value::from(provider_display_name.as_str()).to_string();
-    let model_name = toml_edit::Value::from(model_name.as_str()).to_string();
+    let model_name_toml = toml_edit::Value::from(model_name.as_str()).to_string();
     let endpoint = toml_edit::Value::from(endpoint.as_str()).to_string();
 
     // Deep-link imports carry their own API key. Default to third-party auth;
     // the live writer injects the bearer token and applies login preservation.
     let config_toml = format!(
         r#"model_provider = "custom"
-model = {model_name}
+model = {model_name_toml}
 model_reasoning_effort = "high"
 disable_response_storage = true
 
@@ -576,12 +601,21 @@ requires_openai_auth = false
 "#
     );
 
-    json!({
+    let mut settings = json!({
         "auth": {
             "OPENAI_API_KEY": request.api_key,
         },
         "config": config_toml
-    })
+    });
+    if !catalog_models.is_empty() {
+        settings["modelCatalog"] = json!({
+            "models": catalog_models
+                .iter()
+                .map(|model| json!({ "model": model }))
+                .collect::<Vec<_>>()
+        });
+    }
+    settings
 }
 
 /// Build Gemini settings configuration
@@ -901,6 +935,32 @@ fn merge_codex_config(
     request: &mut DeepLinkImportRequest,
     config: &serde_json::Value,
 ) -> Result<(), AppError> {
+    // Keep model choices declared by a CCS-exported config when the link has
+    // no explicit list. The URL's `models` parameter takes precedence.
+    if request.models.as_ref().is_none_or(Vec::is_empty) {
+        let models = config
+            .pointer("/modelCatalog/models")
+            .and_then(|value| value.as_array())
+            .map(|models| {
+                models
+                    .iter()
+                    .filter_map(|value| {
+                        value
+                            .get("model")
+                            .and_then(|model| model.as_str())
+                            .or_else(|| value.as_str())
+                    })
+                    .map(str::trim)
+                    .filter(|model| !model.is_empty())
+                    .map(str::to_string)
+                    .collect::<Vec<_>>()
+            })
+            .unwrap_or_default();
+        if !models.is_empty() {
+            request.models = Some(models);
+        }
+    }
+
     // Auto-fill API key from auth.OPENAI_API_KEY or Codex mobile-compatible bearer token.
     if request.api_key.as_ref().is_none_or(|s| s.is_empty()) {
         let config_str = config.get("config").and_then(|v| v.as_str());

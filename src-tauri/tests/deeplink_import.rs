@@ -342,6 +342,58 @@ fn deeplink_import_codex_provider_builds_auth_and_config() {
 }
 
 #[test]
+fn deeplink_codex_explicit_models_reach_the_live_catalog() {
+    let _guard = test_mutex().lock().expect("acquire test mutex");
+    reset_test_fs();
+    let home = ensure_test_home();
+    let db = Arc::new(Database::memory().expect("create memory db"));
+    let state = AppState::new(db.clone());
+
+    let url = provider_url(
+        "codex",
+        "NewAPI relay",
+        &[
+            ("endpoint", "https://api.example.com/v1"),
+            ("apiKey", "sk-fixture"),
+            ("model", "gpt-6-sol"),
+            ("models", "gpt-6-sol,gpt-6-luna"),
+        ],
+    );
+    let provider_id = import_url(&state, &url);
+    let provider = db
+        .get_provider_by_id(&provider_id, "codex")
+        .unwrap()
+        .expect("saved Codex provider");
+    assert_eq!(
+        provider.settings_config["modelCatalog"]["models"]
+            .as_array()
+            .unwrap()
+            .len(),
+        2
+    );
+
+    let config: toml::Value = toml::from_str(
+        &fs::read_to_string(home.join(".codex/config.toml")).expect("read live Codex config"),
+    )
+    .expect("parse live Codex config");
+    assert_eq!(config["model"].as_str(), Some("gpt-6-sol"));
+    assert_eq!(
+        config["model_catalog_json"].as_str(),
+        Some("cc-switch-model-catalog.json")
+    );
+
+    let catalog: Value = serde_json::from_slice(
+        &fs::read(home.join(".codex/cc-switch-model-catalog.json"))
+            .expect("read generated model catalog"),
+    )
+    .expect("parse generated model catalog");
+    let models = catalog["models"].as_array().expect("model catalog entries");
+    assert_eq!(models.len(), 2);
+    assert_eq!(models[0]["slug"], "gpt-6-sol");
+    assert_eq!(models[1]["slug"], "gpt-6-luna");
+}
+
+#[test]
 fn deeplink_codex_import_and_switch_use_the_key_without_manual_edits() {
     let _guard = test_mutex().lock().expect("acquire test mutex");
 

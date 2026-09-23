@@ -132,6 +132,18 @@ fn parse_provider_deeplink(
 
     // Extract optional fields
     let model = params.get("model").cloned();
+    let models = if app == "codex" {
+        params.get("models").map(|value| {
+            value
+                .split(',')
+                .map(str::trim)
+                .filter(|model| !model.is_empty())
+                .map(str::to_string)
+                .collect()
+        })
+    } else {
+        None
+    };
     let notes = params.get("notes").cloned();
     let haiku_model = params.get("haikuModel").cloned();
     let sonnet_model = params.get("sonnetModel").cloned();
@@ -175,6 +187,7 @@ fn parse_provider_deeplink(
             .filter(|value| crate::provider_logo::validate_icon_url(value).is_ok())
             .cloned(),
         model,
+        models,
         notes,
         haiku_model,
         sonnet_model,
@@ -252,6 +265,7 @@ fn parse_prompt_deeplink(
         endpoint: None,
         api_key: None,
         model: None,
+        models: None,
         notes: None,
         haiku_model: None,
         sonnet_model: None,
@@ -326,6 +340,7 @@ fn parse_mcp_deeplink(
         endpoint: None,
         api_key: None,
         model: None,
+        models: None,
         notes: None,
         haiku_model: None,
         sonnet_model: None,
@@ -382,6 +397,7 @@ fn parse_skill_deeplink(
         endpoint: None,
         api_key: None,
         model: None,
+        models: None,
         notes: None,
         haiku_model: None,
         sonnet_model: None,

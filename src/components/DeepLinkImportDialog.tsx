@@ -475,16 +475,30 @@ export function DeepLinkImportDialog() {
                   ) : (
                     <>
                       {/* Codex 和 Gemini 使用通用 model 字段 */}
-                      {request.model && (
+                      {(request.model ||
+                        (request.app === "codex" && request.models?.[0])) && (
                         <div className="grid grid-cols-3 items-center gap-4">
                           <div className="font-medium text-sm text-muted-foreground">
-                            {t("deeplink.model")}
+                            {request.app === "codex" && request.models?.length
+                              ? t("deeplink.defaultModel")
+                              : t("deeplink.model")}
                           </div>
                           <div className="col-span-2 min-w-0 break-all text-sm font-mono">
-                            {request.model}
+                            {request.model || request.models?.[0]}
                           </div>
                         </div>
                       )}
+                      {request.app === "codex" &&
+                        (request.models?.length ?? 0) > 0 && (
+                          <div className="grid grid-cols-3 items-center gap-4">
+                            <div className="font-medium text-sm text-muted-foreground">
+                              {t("deeplink.models")}
+                            </div>
+                            <div className="col-span-2 min-w-0 break-all text-sm font-mono">
+                              {request.models?.join(", ")}
+                            </div>
+                          </div>
+                        )}
                     </>
                   )}
 

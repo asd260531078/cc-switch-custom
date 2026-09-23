@@ -363,6 +363,7 @@ fn new_official_model_ids_survive_provider_deeplink_import() {
                 AppType::Codex => {
                     let document: toml::Value = config["config"].as_str().unwrap().parse().unwrap();
                     assert_eq!(document["model"].as_str(), Some(model));
+                    assert!(config.get("modelCatalog").is_none());
                 }
                 AppType::GrokBuild => {
                     let document: toml::Value = config["config"].as_str().unwrap().parse().unwrap();
@@ -376,6 +377,95 @@ fn new_official_model_ids_survive_provider_deeplink_import() {
             }
         }
     }
+}
+
+#[test]
+fn codex_deeplink_imports_explicit_model_list_without_changing_legacy_links() {
+    use super::provider::build_provider_from_request;
+
+    let mut url = url::Url::parse("ccswitch://v1/import").unwrap();
+    url.query_pairs_mut().extend_pairs([
+        ("resource", "provider"),
+        ("app", "codex"),
+        ("name", "NewAPI relay"),
+        ("endpoint", "https://api.example.com/v1"),
+        ("apiKey", "sk-fixture"),
+        ("model", "gpt-6-sol"),
+        ("models", "gpt-6-sol, gpt-6-luna, gpt-6-sol"),
+    ]);
+    let request = parse_deeplink_url(url.as_str()).unwrap();
+    assert_eq!(
+        request.models.as_deref(),
+        Some(
+            &[
+                "gpt-6-sol".to_string(),
+                "gpt-6-luna".to_string(),
+                "gpt-6-sol".to_string()
+            ][..]
+        )
+    );
+    let roundtrip: DeepLinkImportRequest =
+        serde_json::from_value(serde_json::to_value(&request).unwrap()).unwrap();
+    let provider = build_provider_from_request(&AppType::Codex, &roundtrip).unwrap();
+    let settings = &provider.settings_config;
+    let config: toml::Value = settings["config"].as_str().unwrap().parse().unwrap();
+    assert_eq!(config["model"].as_str(), Some("gpt-6-sol"));
+    assert_eq!(
+        settings["modelCatalog"]["models"].as_array().unwrap().len(),
+        2
+    );
+    assert_eq!(settings["modelCatalog"]["models"][0]["model"], "gpt-6-sol");
+    assert_eq!(settings["modelCatalog"]["models"][1]["model"], "gpt-6-luna");
+
+    let mut no_default_url = url.clone();
+    no_default_url.query_pairs_mut().clear().extend_pairs([
+        ("resource", "provider"),
+        ("app", "codex"),
+        ("name", "NewAPI relay"),
+        ("endpoint", "https://api.example.com/v1"),
+        ("apiKey", "sk-fixture"),
+        ("models", "gpt-6-luna,gpt-6-sol"),
+    ]);
+    let request = parse_deeplink_url(no_default_url.as_str()).unwrap();
+    let provider = build_provider_from_request(&AppType::Codex, &request).unwrap();
+    let config: toml::Value = provider.settings_config["config"]
+        .as_str()
+        .unwrap()
+        .parse()
+        .unwrap();
+    assert_eq!(config["model"].as_str(), Some("gpt-6-luna"));
+}
+
+#[test]
+fn codex_deeplink_keeps_model_list_from_inline_config() {
+    use super::provider::build_provider_from_request;
+
+    let inline = serde_json::json!({
+        "modelCatalog": {
+            "models": [
+                { "model": "gpt-6-sol" },
+                { "model": "gpt-6-luna" }
+            ]
+        }
+    });
+    let mut url = url::Url::parse("ccswitch://v1/import").unwrap();
+    url.query_pairs_mut().extend_pairs([
+        ("resource", "provider"),
+        ("app", "codex"),
+        ("name", "NewAPI relay"),
+        ("endpoint", "https://api.example.com/v1"),
+        ("apiKey", "sk-fixture"),
+        ("configFormat", "json"),
+        ("config", &BASE64_STANDARD.encode(inline.to_string())),
+    ]);
+    let request = parse_deeplink_url(url.as_str()).unwrap();
+    let merged = parse_and_merge_config(&request).unwrap();
+    assert_eq!(merged.models.as_ref().unwrap().len(), 2);
+    let provider = build_provider_from_request(&AppType::Codex, &merged).unwrap();
+    assert_eq!(
+        provider.settings_config["modelCatalog"]["models"][1]["model"],
+        "gpt-6-luna"
+    );
 }
 
 #[test]
@@ -467,6 +557,7 @@ fn test_build_gemini_provider_with_model() {
         icon: None,
         icon_url: None,
         model: Some("gemini-2.0-flash".to_string()),
+        models: None,
         notes: None,
         haiku_model: None,
         sonnet_model: None,
@@ -521,6 +612,7 @@ fn test_build_gemini_provider_without_model() {
         icon: None,
         icon_url: None,
         model: None,
+        models: None,
         notes: None,
         haiku_model: None,
         sonnet_model: None,
@@ -568,6 +660,7 @@ fn test_deeplink_usage_script_does_not_copy_provider_credentials() {
         icon: None,
         icon_url: None,
         model: None,
+        models: None,
         notes: None,
         haiku_model: None,
         sonnet_model: None,
@@ -616,6 +709,7 @@ fn usage_script_request(code: &str, usage_enabled: Option<bool>) -> DeepLinkImpo
         icon: None,
         icon_url: None,
         model: None,
+        models: None,
         notes: None,
         haiku_model: None,
         sonnet_model: None,
@@ -700,6 +794,7 @@ fn test_deeplink_usage_script_omits_explicit_credentials_that_match_provider() {
         icon: None,
         icon_url: None,
         model: None,
+        models: None,
         notes: None,
         haiku_model: None,
         sonnet_model: None,
@@ -749,6 +844,7 @@ fn test_deeplink_usage_script_preserves_distinct_usage_credentials() {
         icon: None,
         icon_url: None,
         model: None,
+        models: None,
         notes: None,
         haiku_model: None,
         sonnet_model: None,
@@ -803,6 +899,7 @@ fn test_parse_and_merge_config_claude() {
         icon: None,
         icon_url: None,
         model: None,
+        models: None,
         notes: None,
         haiku_model: None,
         sonnet_model: None,
@@ -927,6 +1024,7 @@ fn test_parse_and_merge_config_url_override() {
         icon: None,
         icon_url: None,
         model: None,
+        models: None,
         notes: None,
         haiku_model: None,
         sonnet_model: None,
@@ -991,6 +1089,7 @@ fn test_build_claude_provider_preserves_custom_env_fields() {
         icon_url: None,
         // URL param: must win over the same key in config (haiku-from-config)
         model: Some("main-model".to_string()),
+        models: None,
         notes: None,
         haiku_model: Some("haiku-from-url".to_string()),
         sonnet_model: None,
@@ -1047,6 +1146,7 @@ fn test_build_claude_provider_without_config_unchanged() {
         icon: None,
         icon_url: None,
         model: None,
+        models: None,
         notes: None,
         haiku_model: None,
         sonnet_model: None,
