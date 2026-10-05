@@ -55,10 +55,9 @@ describe("official provider preset visibility", () => {
         preset,
       }));
       const original = JSON.stringify(entries);
-      for (const sortMode of ["original", "nameAsc"] as const) {
+      {
         const visible = getVisiblePresetEntries(entries, {
           query: "",
-          sortMode,
           t: (key) => key,
         });
         for (const officialName of officialNames) {
@@ -69,7 +68,6 @@ describe("official provider preset visibility", () => {
           expect(
             getVisiblePresetEntries(entries, {
               query: officialName,
-              sortMode,
               t: (key) => key,
             }).some((entry) => entry.preset.name === officialName),
             officialName,
@@ -84,7 +82,6 @@ describe("official provider preset visibility", () => {
         expect(
           getVisiblePresetEntries(entries, {
             query: "PackyCode",
-            sortMode,
             t: (key) => key,
           }),
         ).toEqual([]);

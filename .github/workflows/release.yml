@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Existing version tag to build (for example v3.20.201)'
+        description: 'Existing version tag to build (for example v4.0.201)'
         required: true
         type: string
 
@@ -22,7 +22,64 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # 应用内更新摘要（src/whats-new/<版本>.json，见同目录 README）随安装包发出。漏写的话
+  # 升级到这一版的用户什么也看不到；结构写坏的话弹窗渲染出错，整个应用落进错误页。
+  # 放在最前面查，不白跑编译。推 tag 和 push main 同时发生，不能指望 CI 先跑完单测，
+  # 所以这里自己跑一遍检查所有随包摘要的那份单测。
+  whats-new-check:
+    name: Check in-app what's new summaries
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.tag && format('refs/tags/{0}', inputs.tag) || github.ref }}
+
+      # 手动干跑可以在任意分支上跑，那时这一版的摘要可能还没写，只在推 tag 时要求存在
+      - name: Require this version's summary
+        if: github.event_name == 'push' && github.ref_type == 'tag'
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          file="src/whats-new/${TAG#v}.json"
+          if [ ! -f "$file" ]; then
+            echo "::error file=$file::Missing $file. Write the in-app summary for $TAG (see src/whats-new/README.md); use \"items\": [] to skip the popup."
+            exit 1
+          fi
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+
+      - name: Setup pnpm
+        env:
+          COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"
+        run: |
+          corepack enable
+          corepack install
+          pnpm --version
+
+      - name: Get pnpm store directory
+        id: pnpm-store
+        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v5
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: ${{ runner.os }}-${{ runner.arch }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: ${{ runner.os }}-${{ runner.arch }}-pnpm-store-
+
+      - name: Install frontend deps
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate all summaries
+        run: pnpm vitest run tests/config/whatsNewEntries.test.ts
+
   release:
+    needs: whats-new-check
     runs-on: ${{ matrix.os }}
     environment: release
     timeout-minutes: 90
@@ -56,18 +113,24 @@ jobs:
         with:
           node-version: '20'
 
+      # rust-toolchain.toml 是编译器版本的唯一来源：直接装它，免得先装 stable 再被 rustup 换掉
+      - name: Read pinned Rust toolchain
+        id: rust-toolchain
+        shell: bash
+        run: |
+          channel=$(sed -nE 's/^channel *= *"([^"]+)".*/\1/p' rust-toolchain.toml)
+          test -n "$channel"
+          echo "channel=$channel" >> "$GITHUB_OUTPUT"
+
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ steps.rust-toolchain.outputs.channel }}
 
       - name: Add Windows ARM64 target
         if: runner.os == 'Windows' && matrix.arch == 'arm64'
         shell: pwsh
         run: rustup target add aarch64-pc-windows-msvc
-
-      - name: Add macOS targets
-        if: runner.os == 'macOS'
-        run: |
-          rustup target add aarch64-apple-darwin x86_64-apple-darwin
 
       - name: Install Linux system deps
         if: runner.os == 'Linux'
@@ -114,7 +177,7 @@ jobs:
         if: runner.os != 'Windows' || matrix.arch != 'arm64'
         id: pnpm-store
         shell: bash
-        run: echo "path=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
+        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
 
       - name: Setup pnpm cache
         if: runner.os != 'Windows' || matrix.arch != 'arm64'
@@ -461,13 +524,9 @@ jobs:
             if (Test-Path $sigPath) {
               Copy-Item $sigPath (Join-Path release-assets ("$dest.sig"))
               Write-Host "Signature copied: $dest.sig"
-            } elseif ($isArm64) {
-              throw "Signature not found for $($msi.Name)"
             } else {
               throw "Signature not found for $($msi.Name)"
             }
-          } elseif ($isArm64) {
-            throw 'No Windows ARM64 MSI installer found'
           } else {
             throw 'No Windows MSI installer found'
           }
@@ -520,14 +579,18 @@ jobs:
           ARCH="${{ matrix.arch || 'x86_64' }}"
           # Updater artifact: AppImage（含对应 .sig）
           APPIMAGE=$(find src-tauri/target/release/bundle -name "*.AppImage" | head -1 || true)
-          if [ -n "$APPIMAGE" ]; then
-            NEW_APPIMAGE="CC-Switch-${VERSION}-Linux-${ARCH}.AppImage"
-            cp "$APPIMAGE" "release-assets/$NEW_APPIMAGE"
-            [ -f "$APPIMAGE.sig" ] && cp "$APPIMAGE.sig" "release-assets/$NEW_APPIMAGE.sig" || echo ".sig for AppImage not found"
-            echo "AppImage copied: $NEW_APPIMAGE"
-          else
-            echo "No AppImage found under target/release/bundle" >&2
+          if [ -z "$APPIMAGE" ]; then
+            echo "❌ No AppImage found under target/release/bundle" >&2
+            exit 1
           fi
+          if [ ! -f "$APPIMAGE.sig" ]; then
+            echo "❌ Updater signature not found: $APPIMAGE.sig" >&2
+            exit 1
+          fi
+          NEW_APPIMAGE="CC-Switch-${VERSION}-Linux-${ARCH}.AppImage"
+          cp "$APPIMAGE" "release-assets/$NEW_APPIMAGE"
+          cp "$APPIMAGE.sig" "release-assets/$NEW_APPIMAGE.sig"
+          echo "AppImage copied: $NEW_APPIMAGE"
           # 额外上传 .deb（用于手动安装，不参与 Updater）
           DEB=$(find src-tauri/target/release/bundle -name "*.deb" | head -1 || true)
           if [ -n "$DEB" ]; then
@@ -582,21 +645,14 @@ jobs:
           echo "Listing bundles in src-tauri/target..."
           find src-tauri/target -maxdepth 4 -type f -name "*.*" 2>/dev/null || true
 
-      - name: Clean up Apple signing keychain
-        if: runner.os == 'macOS' && always()
-        shell: bash
-        run: |
-          if [ -n "${ORIGINAL_DEFAULT_KEYCHAIN:-}" ]; then
-            security default-keychain -s "$ORIGINAL_DEFAULT_KEYCHAIN" || true
-          fi
-          if [ -f "$RUNNER_TEMP/build.keychain-db" ]; then
-            security delete-keychain "$RUNNER_TEMP/build.keychain-db" || true
-          fi
-
+  # 合并本项目的 Windows x86_64 与 macOS Universal 产物，完整检查后才创建草稿。
   publish-release:
     name: Publish GitHub Release
     runs-on: ubuntu-22.04
     needs: release
+    # 只有推 tag 才发布。手动触发时也能选 tag 作为运行版本，单看 ref_type 会把干跑当成正式发布，
+    # 覆盖已发布 release 的正文和安装包
+    if: github.event_name == 'push' && github.ref_type == 'tag'
     permissions:
       contents: write
     steps:
@@ -613,49 +669,6 @@ jobs:
           set -euo pipefail
           ls -la release-assets
 
-      - name: Upload Release Assets
-        uses: softprops/action-gh-release@v3
-        with:
-          tag_name: ${{ env.RELEASE_TAG }}
-          name: CC Switch Custom ${{ env.RELEASE_TAG }}
-          draft: true
-          prerelease: false
-          body: |
-            CC Switch Custom 定制版。详细变更、数据库升级与回退说明见[中文发布说明](https://github.com/${{ github.repository }}/blob/${{ env.RELEASE_TAG }}/docs/release-notes/${{ env.RELEASE_TAG }}-zh.md)。
-
-            - macOS 12+（Apple Silicon / Intel）：下载 `CC-Switch-${{ env.RELEASE_TAG }}-macOS.dmg`。
-            - Windows 10/11 64 位：下载 `CC-Switch-${{ env.RELEASE_TAG }}-Windows.msi`；绿色版使用 `Windows-Portable.zip`。
-            - `.tar.gz`、`.sig`、`latest.json` 用于应用更新，普通安装无需下载。
-
-            本版 macOS 使用 ad-hoc 签名，未做 Apple 公证；Windows 未配置 Authenticode 证书，系统可能提示未知开发者。
-            自动更新仅来自本仓库，并用独立 Tauri 密钥验证更新包。SHA256SUMS 文件用于核对下载完整性。
-            沿用官方应用标识、ccswitch:// 协议及数据目录；安装会替换同位置的 CC Switch。安装前退出旧版并在设置中备份数据，不要同时运行两版。
-            未进行 Windows 10/11 实机安装、macOS 隔离区首次启动或真实上游模型调用验收；构建成功不等于这些场景已实测。
-          files: release-assets/*
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  assemble-latest-json:
-    name: Assemble latest.json
-    runs-on: ubuntu-22.04
-    needs: publish-release
-    permissions:
-      contents: write
-    steps:
-      - name: Prepare GH
-        run: |
-          gh --version || (type -p curl >/dev/null && sudo apt-get update && sudo apt-get install -y gh || true)
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Download all release assets
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -euxo pipefail
-          TAG="${RELEASE_TAG}"
-          mkdir -p dl
-          gh release download "$TAG" --dir dl --repo "$GITHUB_REPOSITORY"
-          ls -la dl || true
       - name: Generate latest.json
         env:
           REPO: ${{ github.repository }}
@@ -672,7 +685,7 @@ jobs:
           linux_x64_url=""; linux_x64_sig=""
           linux_arm64_url=""; linux_arm64_sig=""
           shopt -s nullglob
-          for sig in dl/*.sig; do
+          for sig in release-assets/*.sig; do
             base=${sig%.sig}
             fname=$(basename "$base")
             url="$base_url/$fname"
@@ -691,7 +704,15 @@ jobs:
                 linux_x64_url="$url"; linux_x64_sig="$sig_content";;
             esac
           done
-          # 构造 JSON（仅包含存在的目标）
+          # 缺任一平台都不能发：缺的那批用户会静默收不到更新
+          missing=""
+          [ -n "$mac_sig" ] || missing="$missing macOS"
+          [ -n "$win_x64_sig" ] || missing="$missing windows-x86_64"
+          if [ -n "$missing" ]; then
+            echo "❌ Missing updater signatures for:$missing" >&2
+            exit 1
+          fi
+          # 构造 JSON
           tmp_json=$(mktemp)
           {
             echo '{'
@@ -732,11 +753,38 @@ jobs:
             echo '}'
           } > "$tmp_json"
           echo "Generated latest.json:" && cat "$tmp_json"
-          mv "$tmp_json" latest.json
-      - name: Upload latest.json to release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          mv "$tmp_json" release-assets/latest.json
+
+      - name: Verify updater metadata
         run: |
-          set -euxo pipefail
-          python3 -c 'import json; d=json.load(open("latest.json")); assert set(d["platforms"]) == {"darwin-aarch64", "darwin-x86_64", "windows-x86_64"}; assert all(p["signature"] for p in d["platforms"].values())'
-          gh release upload "$RELEASE_TAG" latest.json --clobber --repo "$GITHUB_REPOSITORY"
+          python3 - <<'PY_CHECK'
+          import json, os
+          from pathlib import Path
+          data = json.loads(Path('release-assets/latest.json').read_text())
+          assert data['version'] == os.environ['RELEASE_TAG'].removeprefix('v')
+          assert set(data['platforms']) == {'darwin-aarch64', 'darwin-x86_64', 'windows-x86_64'}
+          base = f"https://github.com/{os.environ['GITHUB_REPOSITORY']}/releases/download/{os.environ['RELEASE_TAG']}/"
+          assert all(p['signature'] and p['url'].startswith(base) for p in data['platforms'].values())
+          PY_CHECK
+
+      - name: Upload Release Assets
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: CC Switch Custom ${{ env.RELEASE_TAG }}
+          draft: true
+          prerelease: true
+          body: |
+            CC Switch Custom 4.0 预览版，基于官方 v4.0.2。详细变更、数据库升级与回退说明见[定制维护记录](https://github.com/${{ github.repository }}/blob/${{ env.RELEASE_TAG }}/docs/local-customizations.md)。
+
+            - macOS 12+（Apple Silicon / Intel）：下载 `CC-Switch-${{ env.RELEASE_TAG }}-macOS.dmg`。
+            - Windows 10/11 64 位：下载 `CC-Switch-${{ env.RELEASE_TAG }}-Windows.msi`；绿色版使用 `Windows-Portable.zip`。
+            - `.tar.gz`、`.sig`、`latest.json` 用于应用更新，普通安装无需下载。
+
+            本版 macOS 使用 ad-hoc 签名，未做 Apple 公证；Windows 未配置 Authenticode 证书，系统可能提示未知开发者。
+            自动更新仅来自本仓库，并用独立 Tauri 密钥验证更新包。SHA256SUMS 文件用于核对下载完整性。
+            沿用官方应用标识、ccswitch:// 协议及数据目录；安装会替换同位置的 CC Switch。安装前退出旧版并在设置中备份数据，不要同时运行两版。
+            未进行 Windows 10/11 实机安装、macOS 隔离区首次启动或真实上游模型调用验收；构建成功不等于这些场景已实测。
+          files: release-assets/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

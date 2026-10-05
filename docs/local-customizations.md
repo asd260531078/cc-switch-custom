@@ -5,13 +5,31 @@
 - 本项目仓库：[asd260531078/cc-switch-custom](https://github.com/asd260531078/cc-switch-custom)。`origin` 用于本项目上传；官方仓库为 `farion1231/cc-switch`，同步时按官方标签抓取并核实，不将其作为推送目标。
 - 仓库初始化时仅有 Apache 2.0 许可证，其[原始记录](https://github.com/asd260531078/cc-switch-custom/blob/186fdb999d30a77aa95106bd05f7e5758004299c/LICENSE)保留在 Git 历史中；合入官方源码后，根目录 `LICENSE` 沿用官方 MIT 及原版权声明。
 - 上游唯一基线：[farion1231/cc-switch](https://github.com/farion1231/cc-switch)。本地起点为官方 `v3.20.2` / `f3b18df12007d0fd79fd8ad8d310880664015197`，分支 `codex/fix-claude-desktop-deeplink`。
-- 当前代码已合入官方 `v3.20.4` / `43e1d99084ed9b2f5dc252fd35c5adaf29d6876e`；本仓库目标版本号为 `3.20.207`。实际发布状态以 GitHub Release、Actions 与安装包验收结果为准，不能从本地源码版本推断用户设备已升级。
+- 当前代码已合入官方预览版 `v4.0.2` / `bf2fe0d0becbfc8473955af66010c6b13f51b1e8`；本仓库源码版本号为 `4.0.201`。实际发布状态以 GitHub Release、Actions 与安装包验收结果为准，不能从本地源码版本推断用户设备已升级。
 - 官方优先、定制最小化：保留目录、接口、配置与业务行为；优先复用官方能力，不做无关重构、格式化或依赖升级。按功能维护可独立撤销的差异。
 - 每次修复或同步前重新检查最新稳定版、相关提交和 PR 状态，区分已发布、已合并、未合并。先验证需求、配置和数据兼容，再让官方接管；部分覆盖时只保留未覆盖部分。不能因名称相同或发生冲突就删掉必要行为。
 - 冲突逐项按功能解决，不整文件覆盖。涉及实际用户数据时先备份并明确迁移、回滚。同步后更新本表、删除失效兼容代码，再执行对应回归；不保证未经验证的未来版本兼容。
 - 历史版本的上传与构建发布授权只适用于对应发布任务；本次官方同步不自动授权推送、发布、安装或改动真实用户配置。
 
-## UPSTREAM-3.20.4：官方同步与新模型导入
+## UPSTREAM-4.0.2：4.0 预览版同步
+
+同步官方全新界面、直连/路由/聚合模式、会话阅读器、配置关键字段写入和 4.0.1/4.0.2 修复。保留 Desktop/Pi 仅导入与显式启用、Codex 深链的 API Key 模板和精确模型目录、网站 Logo、Token-AI/MX-AI 优先预设、独立更新源及签名。网站 Logo 通过新版共享 `ProviderIconBox` 展示；模型能力目录优先采用官方新增规格，保留旧 Pi 模型 key 的必要兼容。官方已覆盖的 Sol/Luna/Opus 5.5 定价与模型条目不重复维护。
+
+关于页继续去掉官方 Star 与官网推广入口；新版更新摘要详情指向本仓库，四种语言都有 `4.0.201` 摘要。CI 保留按路径检查和手动 WSL2 全量策略；发行工作流保留 Windows x86_64 与 macOS Universal/ad-hoc 签名，在创建草稿前检查所有本项目平台的更新签名及 `latest.json`，4.0 包使用预览标记。
+
+数据库 schema 从 19 升到 20，新增 Pi MCP 启用列，升级本身不向 Pi 写配置。应用首次迁移前会自动备份；真实安装前仍需用户额外备份。4.0 打开过的数据库不能直接交给 3.x 或旧 4.0 使用，回退需退出应用并恢复迁移前备份。本次只同步源码并使用隔离测试数据，不安装、不改写真实配置/数据库，不推送或发布。
+
+认证兼容核对参考 [OWASP ASVS 5.0.0](https://owasp.org/projects/asvs)、[Authentication](https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html) 和 [Session Management](https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html)：保留新版原生登录/暂存凭据切换，拒绝从未验证的供应商 OAuth 快照恢复登录；测试使用虚拟原生登录。密钥仅在显式启用时由后端投影，预览保持脱敏，Logo 下载不携带凭据。本记录不代表完整 ASVS 合规认证；真实 OAuth、Windows 10/11、安装包与数据库升级仍需实机验收。
+
+本地验收（2026-10-06）：
+
+- `pnpm install --frozen-lockfile`、`pnpm typecheck`、`pnpm format:check`、`pnpm build:renderer` 通过。构建保留 Vite 大包提示，未扩展到无关打包重构。
+- `pnpm exec vitest run --maxWorkers=4 --minWorkers=1` 覆盖 196 文件、2312 项，2309 项通过；其余 3 项测试适配新版预设选择和本仓库更新链接后，连同相关测试共 24 项定向复验全部通过。生产可见性及草稿投影断言保留。
+- 隔离测试目录下运行 `cargo test --locked --manifest-path src-tauri/Cargo.toml -- --test-threads=1`，库测试 3375 项通过、9 项原有忽略；适配新版原生登录 fixture 及 Codex 深链金标后，以 `--test '*'` 重跑全部集成测试，197 项通过。
+- `cargo fmt --check --manifest-path src-tauri/Cargo.toml`、`cargo clippy --locked --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings` 通过；四处应用版本、独立更新源/公钥和标识一致。
+- 三份工作流 YAML 校验通过；使用虚拟文件检查 `latest.json` 平台/版本/签名，并验证缺失 Windows 签名会在上传前失败。未执行 GitHub Actions 或安装包构建；金标末尾的预期空行保留，其余差异空白检查通过。
+
+## UPSTREAM-3.20.4：上一代官方同步与新模型导入
 
 合入官方 v3.20.3、v3.20.4 的修复和 MiniMax Code 支持，保留本项目的 Claude Desktop/Pi 深链、外部 Logo、供应商预设顺序、赞助展示取舍和独立更新源。官方 v3.20.4 将数据库 schema 从 18 升到 19；首次打开真实旧库前应在应用设置中额外导出/备份，回退旧版时按官方备份恢复旧 schema 数据，不直接用新库覆盖旧版。
 

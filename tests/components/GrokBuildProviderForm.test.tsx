@@ -1,4 +1,5 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { renderWithQueryClient as render } from "../utils/testQueryClient";
 import userEvent from "@testing-library/user-event";
 import { parse as parseToml } from "smol-toml";
 import { describe, expect, it, vi } from "vitest";
@@ -96,6 +97,28 @@ describe("GrokBuildProviderForm", () => {
       container.querySelector<HTMLInputElement>('input[name="name"]');
     expect(baseUrlInput?.value).toBe("https://api.x.ai/v1");
     expect(nameInput?.value).toBe("xAI (Grok)");
+  });
+
+  it("points the get-API-key link at the preset's apiKeyUrl", async () => {
+    const user = userEvent.setup();
+    const { container } = render(
+      <GrokBuildProviderForm
+        submitLabel="Save"
+        onSubmit={() => {}}
+        onCancel={() => {}}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Claude" }));
+
+    const websiteInput = container.querySelector<HTMLInputElement>(
+      'input[name="websiteUrl"]',
+    );
+    expect(websiteInput?.value).toBe("https://www.anthropic.com");
+    expect(screen.getByRole("link", { name: /API Key/ })).toHaveAttribute(
+      "href",
+      "https://platform.claude.com/settings/keys",
+    );
   });
 
   it("submits a complete config.toml payload with Grok defaults", async () => {

@@ -51,10 +51,9 @@ describe("featured provider sites", () => {
         preset,
       }));
       const before = [...entries];
-      for (const sortMode of ["original", "nameAsc"] as const) {
+      {
         const visible = getVisiblePresetEntries(entries, {
           query: "",
-          sortMode,
           t: (key) => key,
         });
         expect(visible.slice(0, 2).map((entry) => entry.preset.name)).toEqual([
@@ -71,7 +70,6 @@ describe("featured provider sites", () => {
         );
         const searched = getVisiblePresetEntries(entries, {
           query: "MX-AI",
-          sortMode,
           t: (key) => key,
         });
         expect(searched.map((entry) => entry.preset.name)).toEqual(["MX-AI"]);

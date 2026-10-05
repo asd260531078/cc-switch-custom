@@ -12,7 +12,8 @@ import { DeepLinkImportDialog } from "@/components/DeepLinkImportDialog";
 import { ProviderCard } from "@/components/providers/ProviderCard";
 import { GrokBuildProviderForm } from "@/components/providers/forms/GrokBuildProviderForm";
 import { deeplinkApi } from "@/lib/api/deeplink";
-import type { Provider } from "@/types";
+import type { Provider, UniversalProvider } from "@/types";
+import { UniversalProviderCard } from "@/components/universal/UniversalProviderCard";
 import { emitTauriEvent } from "../msw/tauriMocks";
 import { createTestQueryClient } from "../utils/testQueryClient";
 
@@ -53,8 +54,8 @@ vi.mock("@/components/ui/dialog", () => ({
   DialogClose: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
-vi.mock("@/components/providers/ProviderActions", () => ({
-  ProviderActions: () => null,
+vi.mock("@/components/providers/ProviderCardActions", () => ({
+  ProviderCardActions: () => null,
 }));
 vi.mock("@/components/UsageFooter", () => ({ default: () => null }));
 vi.mock("@/components/SubscriptionQuotaFooter", () => ({
@@ -105,8 +106,7 @@ function renderCard(item: Provider) {
         provider={item}
         appId="claude"
         isCurrent={false}
-        isProxyRunning={false}
-        onSwitch={vi.fn()}
+        presentation={{ chips: [], buttons: [] }}
         onEdit={vi.fn()}
         onDelete={vi.fn()}
         onConfigureUsage={vi.fn()}
@@ -181,6 +181,42 @@ describe("provider website logo flow", () => {
     );
   });
 
+  it("passes the same complete logo URL through regular and universal cards", () => {
+    const iconUrl =
+      "https://cdn.example.com/Logo%2FOriginal.png?Sig=MiXeD+Value";
+    renderCard(provider("Regular Relay", iconUrl));
+    const universal: UniversalProvider = {
+      id: "universal-relay",
+      name: "Universal Relay",
+      providerType: "openai",
+      baseUrl: "https://shared.example/v1",
+      apiKey: "test-key",
+      icon: "token-ai",
+      apps: { claude: true, codex: true, gemini: false },
+      models: {},
+      meta: { iconUrl },
+    };
+    render(
+      <UniversalProviderCard
+        provider={universal}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+        onSync={vi.fn()}
+        onDuplicate={vi.fn()}
+      />,
+    );
+    expect(iconProps).toHaveBeenCalledWith(
+      expect.objectContaining({ name: "Regular Relay", iconUrl }),
+    );
+    expect(iconProps).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "Universal Relay",
+        icon: "token-ai",
+        iconUrl,
+      }),
+    );
+  });
+
   it("saves an edited logo URL while preserving unrelated metadata", async () => {
     const user = userEvent.setup();
     const onSubmit = vi.fn();
@@ -198,6 +234,7 @@ describe("provider website logo flow", () => {
           },
         }}
       />,
+      { wrapper: Wrapper },
     );
 
     await user.type(
@@ -231,6 +268,7 @@ describe("provider website logo flow", () => {
           },
         }}
       />,
+      { wrapper: Wrapper },
     );
 
     await user.click(screen.getByRole("button", { name: "清除" }));

@@ -4,11 +4,12 @@ import { hermesProviderPresets } from "@/config/hermesProviderPresets";
 import { openclawProviderPresets } from "@/config/openclawProviderPresets";
 import { opencodeProviderPresets } from "@/config/opencodeProviderPresets";
 import { piProviderPresets } from "@/config/piProviderPresets";
+import { piModel, piModelCatalog } from "@/config/piModelCatalog";
 import { resolvePiThinkingProfile } from "@/config/piThinkingProfiles";
 
 describe("new official model import presets", () => {
   it("offers exact OpenAI and Anthropic IDs on direct API presets without changing defaults", () => {
-    const openaiIds = ["gpt-6-sol", "gpt-6-luna"];
+    const openaiIds = ["gpt-6-sol", "gpt-6-luna", "gpt-6-astra"];
     const claudeId = "claude-opus-5-5";
     const find = <T extends { name: string }>(presets: T[], name: string) => {
       const preset = presets.find((entry) => entry.name === name);
@@ -89,6 +90,36 @@ describe("new official model import presets", () => {
     expect(hermesClaude.settingsConfig.models?.[0]?.id).toBe("claude-sonnet-5");
   });
 
+  it("uses the upstream capability entry for the legacy Opus alias and preserves exact IDs", () => {
+    expect(piModelCatalog["anthropic/claude-opus-5-5"]).toBe(
+      piModelCatalog["anthropic/claude-opus-5.5"],
+    );
+    expect(
+      piModel("anthropic/claude-opus-5-5", { id: "claude-opus-5-5" }).id,
+    ).toBe("claude-opus-5-5");
+    const legacy = resolvePiThinkingProfile({
+      catalogKey: "anthropic/claude-opus-5-5",
+      api: "anthropic-messages",
+    });
+    const current = resolvePiThinkingProfile({
+      catalogKey: "anthropic/claude-opus-5.5",
+      api: "anthropic-messages",
+    });
+    expect(legacy).toEqual(current);
+    expect(current?.map.off).toBeNull();
+  });
+
+  it("keeps the new Astra thinking restrictions on the custom API-key preset", () => {
+    const model = piProviderPresets
+      .find((entry) => entry.name === "OpenAI")
+      ?.settingsConfig.models.find((model) => model.id === "gpt-6-astra");
+    expect(model?.thinkingLevelMap?.off).toBeNull();
+    expect(model?.thinkingLevelMap?.max).toBe("max");
+    expect(model?.contextWindow).toBe(
+      piModelCatalog["openai/gpt-6-astra"].capabilities.contextWindow,
+    );
+  });
+
   it("uses compatible Pi thinking settings for the new API models", () => {
     for (const catalogKey of [
       "openai/gpt-6-sol",
@@ -103,7 +134,7 @@ describe("new official model import presets", () => {
     }
     expect(
       resolvePiThinkingProfile({
-        catalogKey: "anthropic/claude-opus-5-5",
+        catalogKey: "anthropic/claude-opus-5.5",
         api: "anthropic-messages",
       })?.modelCompat,
     ).toEqual({ forceAdaptiveThinking: true });

@@ -1,5 +1,6 @@
 use super::TestHomeGuard;
 use crate::deeplink::{import_provider_from_deeplink, parse_deeplink_url, DeepLinkImportRequest};
+use crate::mode::current::{provider_for, Purpose};
 use crate::pi_config::{self, test_support::TestAgentDir};
 use crate::{AppState, AppType, Database, Provider, ProviderService};
 use base64::{engine::general_purpose::STANDARD, Engine};
@@ -218,7 +219,9 @@ fn pi_url_to_import_preserves_encoding_membership_defaults_and_other_apps() {
             original_saved["anthropic"]
         );
         assert_eq!(
-            state.db.get_current_provider("pi").unwrap().as_deref(),
+            provider_for(&state.db, &AppType::Pi, Purpose::Direct)
+                .unwrap()
+                .as_deref(),
             Some("anthropic")
         );
         assert_eq!(
@@ -226,7 +229,9 @@ fn pi_url_to_import_preserves_encoding_membership_defaults_and_other_apps() {
             other_app
         );
         assert_eq!(
-            state.db.get_current_provider("codex").unwrap().as_deref(),
+            provider_for(&state.db, &AppType::Codex, Purpose::Direct)
+                .unwrap()
+                .as_deref(),
             Some("other-app")
         );
         for (path, bytes) in &untouched {
@@ -246,7 +251,9 @@ fn pi_first_save_only_does_not_create_native_config_or_select_a_provider() {
     import_provider_from_deeplink(&state, parsed).unwrap();
     assert!(!pi_config::get_pi_models_path().unwrap().exists());
     assert!(!pi_config::get_pi_settings_path().unwrap().exists());
-    assert!(state.db.get_current_provider("pi").unwrap().is_none());
+    assert!(provider_for(&state.db, &AppType::Pi, Purpose::Direct)
+        .unwrap()
+        .is_none());
 }
 
 #[test]

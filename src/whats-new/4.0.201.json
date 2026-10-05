@@ -1,0 +1,19 @@
+{
+  "version": "4.0.201",
+  "items": [
+    {
+      "type": "new",
+      "zh": "同步官方 4.0.2 预览版：全新界面与多供应商模型聚合",
+      "zh-TW": "同步官方 4.0.2 預覽版：全新介面與多供應商模型聚合",
+      "en": "Updated to the official 4.0.2 preview with a new interface and multi-provider model aggregation",
+      "ja": "公式 4.0.2 プレビューの新画面と複数プロバイダーのモデル集約に対応"
+    },
+    {
+      "type": "improve",
+      "zh": "保留一键导入、网站 Logo、Token-AI 与 MX-AI 预设",
+      "zh-TW": "保留一鍵匯入、網站 Logo、Token-AI 與 MX-AI 預設",
+      "en": "Kept deep-link imports, website logos, and Token-AI and MX-AI presets",
+      "ja": "ディープリンク取り込み、サイトロゴ、Token-AI と MX-AI のプリセットを維持"
+    }
+  ]
+}

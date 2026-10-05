@@ -1,6 +1,8 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ProviderIcon } from "@/components/ProviderIcon";
+import { ProviderIconBox } from "@/components/ProviderIconBox";
+import { getIconUrl } from "@/icons/extracted";
 
 const logoHook = vi.hoisted(() => vi.fn());
 
@@ -73,6 +75,44 @@ describe("ProviderIcon website logo", () => {
 
     expect(screen.queryByRole("img", { name: "Example" })).toBeNull();
     expect(screen.getByTitle("Example").tagName).toBe("SPAN");
+  });
+
+  it("loads a logo through the shared icon box and preserves its fallback sizing", () => {
+    logoHook.mockReturnValue(SAFE_LOGO);
+    const iconUrl = "https://cdn.example.com/Logo%2FOriginal.png?Sig=MiXeD";
+    const { container } = render(
+      <ProviderIconBox icon="openai" iconUrl={iconUrl} name="Example" />,
+    );
+    const box = container.firstElementChild;
+    const logo = container.querySelector("img")!;
+    expect(logoHook).toHaveBeenCalledWith(iconUrl);
+    expect(logo).toHaveAttribute("src", SAFE_LOGO);
+    expect(logo.style.width).toBe("22px");
+    fireEvent.error(logo);
+    expect(container.querySelector("img")).toBeNull();
+    expect(container.firstElementChild).toBe(box);
+    expect(container.querySelector('[title="Example"]')).toHaveStyle({
+      width: "22px",
+      height: "22px",
+    });
+  });
+
+  it("retains the tile icon when a remote logo fails inside the shared box", () => {
+    logoHook.mockReturnValue(SAFE_LOGO);
+    const { container } = render(
+      <ProviderIconBox
+        icon="88api"
+        iconUrl="https://cdn.example.com/tile.png"
+        name="Example"
+      />,
+    );
+    const box = container.firstElementChild;
+    fireEvent.error(container.querySelector("img")!);
+    const fallback = container.querySelector("img")!;
+    expect(fallback).toHaveAttribute("src", getIconUrl("88api"));
+    expect(fallback.style.width).toBe("32px");
+    expect(fallback.className).toContain("object-cover");
+    expect(container.firstElementChild).toBe(box);
   });
 
   it("allows a replacement URL after the previous logo failed", () => {

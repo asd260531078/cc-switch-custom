@@ -103,6 +103,30 @@ describe("official API-key presets for OpenCode, OpenClaw, and Hermes", () => {
     }
   });
 
+  it("keeps the newly imported Astra model available without replacing existing defaults", () => {
+    const opencode = findPreset(opencodeProviderPresets, "OpenAI");
+    expect(opencode.settingsConfig.models["gpt-6-astra"].limit).toEqual({
+      context: 1050000,
+      output: 128000,
+    });
+    expect(Object.keys(opencode.settingsConfig.models)[0]).toBe("gpt-5.6-sol");
+    const openclaw = findPreset(openclawProviderPresets, "OpenAI");
+    expect(
+      openclaw.settingsConfig.models?.find(
+        (model) => model.id === "gpt-6-astra",
+      ),
+    ).toMatchObject({ contextWindow: 1050000, maxTokens: 128000 });
+    expect(openclaw.suggestedDefaults?.model?.primary).toBe(
+      "openai/gpt-5.6-sol",
+    );
+    const hermes = findPreset(hermesProviderPresets, "OpenAI");
+    expect(
+      hermes.settingsConfig.models?.find((model) => model.id === "gpt-6-astra")
+        ?.context_length,
+    ).toBe(1050000);
+    expect(hermes.settingsConfig.models?.[0]?.id).toBe("gpt-5.6-sol");
+  });
+
   it("defaults Token-AI and MX-AI to Responses in all three clients", () => {
     for (const name of featuredNames) {
       const opencode = findPreset(opencodeProviderPresets, name);

@@ -142,7 +142,7 @@ fn desktop_settings_path(home: &Path) -> PathBuf {
 
 #[test]
 fn deeplink_import_claude_provider_persists_to_db() {
-    let _guard = test_mutex().lock().expect("acquire test mutex");
+    let _guard = test_mutex().lock().unwrap_or_else(|e| e.into_inner());
     reset_test_fs();
     let _home = ensure_test_home();
 
@@ -281,7 +281,7 @@ fn site_logos_persist_independently_of_shared_api_endpoint_and_usage_configurati
 
 #[test]
 fn deeplink_import_codex_provider_builds_auth_and_config() {
-    let _guard = test_mutex().lock().expect("acquire test mutex");
+    let _guard = test_mutex().lock().unwrap_or_else(|e| e.into_inner());
     reset_test_fs();
     let home = ensure_test_home();
 
@@ -422,10 +422,17 @@ fn deeplink_codex_import_and_switch_use_the_key_without_manual_edits() {
                     None,
                 );
                 official.category = Some("official".into());
+                let auth_path = home.join(".codex/auth.json");
+                fs::create_dir_all(auth_path.parent().unwrap())
+                    .expect("create isolated Codex config directory");
+                fs::write(
+                    &auth_path,
+                    serde_json::to_vec_pretty(&official.settings_config["auth"]).unwrap(),
+                )
+                .expect("seed isolated native Codex login");
                 ProviderService::add(&state, AppType::Codex, official, true)
                     .expect("seed official provider");
                 let config_path = home.join(".codex/config.toml");
-                let auth_path = home.join(".codex/auth.json");
                 let original_config = fs::read(&config_path).expect("read official config");
                 let original_auth = fs::read(&auth_path).expect("read official auth");
 
@@ -488,25 +495,25 @@ fn deeplink_codex_import_and_switch_use_the_key_without_manual_edits() {
                         .expect("enable saved import without editing");
                 }
 
-                // Check both initial activation and switching back after a live backfill.
+                // Check initial activation and provider data after a round-trip switch.
                 for activation in 0..2 {
                     if activation == 1 {
                         ProviderService::switch(&state, AppType::Codex, "official")
                             .expect("switch back to official login");
                         assert_eq!(fs::read(&auth_path).unwrap(), original_auth);
-                        let backfilled = db
+                        let retained = db
                             .get_provider_by_id(&id, "codex")
-                            .expect("query backfilled provider")
-                            .expect("backfilled provider exists");
+                            .expect("query retained provider")
+                            .expect("retained provider exists");
                         assert_eq!(
-                            backfilled.meta.as_ref().unwrap().icon_url.as_deref(),
+                            retained.meta.as_ref().unwrap().icon_url.as_deref(),
                             Some(logo)
                         );
                         assert_eq!(
-                            backfilled.settings_config["auth"]["OPENAI_API_KEY"],
+                            retained.settings_config["auth"]["OPENAI_API_KEY"],
                             "sk-deeplink-test"
                         );
-                        assert!(!backfilled.settings_config["config"]
+                        assert!(!retained.settings_config["config"]
                             .as_str()
                             .unwrap()
                             .contains("experimental_bearer_token"));
