@@ -1,0 +1,33 @@
+{
+  "version": "4.0.401",
+  "items": [
+    {
+      "type": "new",
+      "zh": "同步官方 4.0.4 正式版，支持 OpenCode 2.0 配置",
+      "zh-TW": "同步官方 4.0.4 正式版，支援 OpenCode 2.0 設定",
+      "en": "Updated to official 4.0.4 stable with OpenCode 2.0 configuration support",
+      "ja": "公式 4.0.4 安定版に同期、OpenCode 2.0 設定に対応"
+    },
+    {
+      "type": "new",
+      "zh": "新增备份空间总览、Codex Credits 余额和整页编辑",
+      "zh-TW": "新增備份空間總覽、Codex Credits 餘額與整頁編輯",
+      "en": "Added backup storage overview, Codex Credits balances, and full-page editors",
+      "ja": "バックアップ容量一覧、Codex Credits 残高、全画面編集を追加"
+    },
+    {
+      "type": "fix",
+      "zh": "修复推理强度、Skill 同步、流式工具调用和缓存用量统计",
+      "zh-TW": "修正推理強度、Skill 同步、串流工具呼叫與快取用量統計",
+      "en": "Fixed reasoning effort, Skill deployment, streaming tool calls, and cached-token totals",
+      "ja": "推論強度、Skill 同期、ストリーミングとキャッシュ用量集計を修正"
+    },
+    {
+      "type": "improve",
+      "zh": "保留一键导入、网站 Logo、优先预设和独立更新通道",
+      "zh-TW": "保留一鍵匯入、網站 Logo、優先預設與獨立更新通道",
+      "en": "Kept custom imports, website logos, preferred presets, and the independent update channel",
+      "ja": "独自の取り込み、サイトロゴ、優先プリセット、更新経路を維持"
+    }
+  ]
+}

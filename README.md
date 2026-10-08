@@ -24,7 +24,7 @@ English | [中文](README_ZH.md) | [日本語](README_JA.md) | [Deutsch](README_
 
 </div>
 
-The current custom source version is `4.0.201`, based on the official `v4.0.2` preview. It retains Claude Desktop/Pi imports, Codex deep-link authentication, website logos, and this repository’s update channel. Source synchronization does not mean packages have been published. The Homebrew and Linux instructions below refer to the upstream distribution.
+The current custom source version is `4.0.401`, based on the official `v4.0.4` stable release. It retains Claude Desktop/Pi imports, Codex deep-link authentication, website logos, and this repository’s update channel. Source synchronization does not mean packages have been published. The Homebrew and Linux instructions below refer to the upstream distribution.
 
 ## Why CC Switch?
 

@@ -24,7 +24,7 @@
 
 </div>
 
-Die aktuelle angepasste Quellversion ist `4.0.201`, basierend auf der offiziellen Vorschau `v4.0.2`. Claude-Desktop/Pi-Importe, Codex-Deep-Link-Authentifizierung, Website-Logos und der Updatekanal dieses Repositorys bleiben erhalten. Die Synchronisierung des Quellcodes bedeutet nicht, dass Installationspakete veröffentlicht wurden. Die folgenden Homebrew- und Linux-Anleitungen beziehen sich auf die offizielle Version.
+Die aktuelle angepasste Quellversion ist `4.0.401`, basierend auf der offiziellen stabilen Version `v4.0.4`. Claude-Desktop/Pi-Importe, Codex-Deep-Link-Authentifizierung, Website-Logos und der Updatekanal dieses Repositorys bleiben erhalten. Die Synchronisierung des Quellcodes bedeutet nicht, dass Installationspakete veröffentlicht wurden. Die folgenden Homebrew- und Linux-Anleitungen beziehen sich auf die offizielle Version.
 
 ## Warum CC Switch?
 

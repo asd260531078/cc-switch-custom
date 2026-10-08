@@ -231,7 +231,7 @@ describe("preset families", () => {
     const claudeEntries = providerPresets
       .filter((item) => !item.hidden)
       .map((item, index) => ({ id: `claude-${index}`, preset: item }));
-    expect(groupPresetRows(claudeEntries)).toHaveLength(78);
+    expect(groupPresetRows(claudeEntries)).toHaveLength(79);
   });
 
   it("orders plans and regions as the design does where a family says so", () => {

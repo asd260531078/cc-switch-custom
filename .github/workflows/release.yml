@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Existing version tag to build (for example v4.0.201)'
+        description: 'Existing version tag to build (for example v4.0.401)'
         required: true
         type: string
 
@@ -773,9 +773,9 @@ jobs:
           tag_name: ${{ env.RELEASE_TAG }}
           name: CC Switch Custom ${{ env.RELEASE_TAG }}
           draft: true
-          prerelease: true
+          prerelease: false
           body: |
-            CC Switch Custom 4.0 预览版，基于官方 v4.0.2。详细变更、数据库升级与回退说明见[定制维护记录](https://github.com/${{ github.repository }}/blob/${{ env.RELEASE_TAG }}/docs/local-customizations.md)。
+            CC Switch Custom，基于官方 v4.0.4 正式版。详细变更、数据兼容与回退说明见[定制维护记录](https://github.com/${{ github.repository }}/blob/${{ env.RELEASE_TAG }}/docs/local-customizations.md)。
 
             - macOS 12+（Apple Silicon / Intel）：下载 `CC-Switch-${{ env.RELEASE_TAG }}-macOS.dmg`。
             - Windows 10/11 64 位：下载 `CC-Switch-${{ env.RELEASE_TAG }}-Windows.msi`；绿色版使用 `Windows-Portable.zip`。

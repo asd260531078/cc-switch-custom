@@ -24,7 +24,7 @@
 
 </div>
 
-本仓库当前源码版本为 `4.0.201`，基于官方 `v4.0.2` 预览版，保留 Claude Desktop/Pi 导入、Codex 深链认证、网站 Logo 和本仓库更新通道。源码同步不代表安装包已发布；下文 Homebrew、Linux 安装方式属于官方发行版。
+本仓库当前源码版本为 `4.0.401`，基于官方 `v4.0.4` 正式版，保留 Claude Desktop/Pi 导入、Codex 深链认证、网站 Logo 和本仓库更新通道。源码同步不代表安装包已发布；下文 Homebrew、Linux 安装方式属于官方发行版。
 
 ## 为什么选择 CC Switch？
 
