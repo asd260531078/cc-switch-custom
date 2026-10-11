@@ -10,6 +10,15 @@ on:
         description: 'Existing version tag to build (for example v4.0.401)'
         required: true
         type: string
+      platform:
+        description: 'Platform to rebuild without replacing other platform artifacts'
+        required: true
+        default: all
+        type: choice
+        options:
+          - all
+          - macos
+          - windows
 
 env:
   RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
@@ -88,11 +97,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - os: windows-2022
-            arch: x86_64
-          - os: macos-14
-            arch: universal
+        include: >-
+          ${{ fromJSON(
+            inputs.platform == 'macos' && '[{"os":"macos-14","arch":"universal"}]' ||
+            inputs.platform == 'windows' && '[{"os":"windows-2022","arch":"x86_64"}]' ||
+            '[{"os":"windows-2022","arch":"x86_64"},{"os":"macos-14","arch":"universal"}]'
+          ) }}
 
     steps:
       - name: Checkout
@@ -126,6 +136,10 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: ${{ steps.rust-toolchain.outputs.channel }}
+
+      - name: Add macOS universal targets
+        if: runner.os == 'macOS'
+        run: rustup target add aarch64-apple-darwin x86_64-apple-darwin
 
       - name: Add Windows ARM64 target
         if: runner.os == 'Windows' && matrix.arch == 'arm64'
