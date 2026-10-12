@@ -1,0 +1,33 @@
+{
+  "version": "4.0.901",
+  "items": [
+    {
+      "type": "new",
+      "zh": "同步官方 4.0.9，新增 Codex Copilot 接入与子代理设置",
+      "zh-TW": "同步官方 4.0.9，新增 Codex Copilot 接入與子代理設定",
+      "en": "Synced official 4.0.9 with Codex Copilot and subagent settings",
+      "ja": "公式 4.0.9 に同期、Codex Copilot とサブエージェント設定を追加"
+    },
+    {
+      "type": "improve",
+      "zh": "重整模型选择流程，支持历史会话压缩和 WSL 连接地址",
+      "zh-TW": "模型選擇流程改版，支援歷史對話壓縮與 WSL 連線位址",
+      "en": "Improved model selection, compressed sessions, and WSL routing",
+      "ja": "モデル選択を改善、圧縮履歴と WSL 接続先に対応"
+    },
+    {
+      "type": "fix",
+      "zh": "修复 Codex 线程报错、缓存费用统计和 Windows 兼容问题",
+      "zh-TW": "修正 Codex 對話錯誤、快取費用統計與 Windows 相容問題",
+      "en": "Fixed Codex thread errors, cache costs, and Windows compatibility",
+      "ja": "Codex スレッドエラー、キャッシュ費用、Windows 互換性を修正"
+    },
+    {
+      "type": "improve",
+      "zh": "保留一键导入、网站 Logo、优先预设和独立更新通道",
+      "zh-TW": "保留一鍵匯入、網站 Logo、優先預設與獨立更新通道",
+      "en": "Kept custom imports, website logos, preferred presets, and the independent update channel",
+      "ja": "独自の取り込み、サイトロゴ、優先プリセット、更新経路を維持"
+    }
+  ]
+}

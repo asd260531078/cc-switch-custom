@@ -5,11 +5,27 @@
 - 本项目仓库：[asd260531078/cc-switch-custom](https://github.com/asd260531078/cc-switch-custom)。`origin` 用于本项目上传；官方仓库为 `farion1231/cc-switch`，同步时按官方标签抓取并核实，不将其作为推送目标。
 - 仓库初始化时仅有 Apache 2.0 许可证，其[原始记录](https://github.com/asd260531078/cc-switch-custom/blob/186fdb999d30a77aa95106bd05f7e5758004299c/LICENSE)保留在 Git 历史中；合入官方源码后，根目录 `LICENSE` 沿用官方 MIT 及原版权声明。
 - 上游唯一基线：[farion1231/cc-switch](https://github.com/farion1231/cc-switch)。本地起点为官方 `v3.20.2` / `f3b18df12007d0fd79fd8ad8d310880664015197`，分支 `codex/fix-claude-desktop-deeplink`。
-- 当前代码已合入官方正式版 `v4.0.4` / `a29a4f3868e9c6ffc2212957cfa66a718642e344`；本仓库源码版本号为 `4.0.401`。实际发布状态以 GitHub Release、Actions 与安装包验收结果为准，不能从本地源码版本推断用户设备已升级。
+- 当前代码已合入官方正式版 `v4.0.9` / `8845b1ef799aa8810b864b122de6af5f4629de10`；本仓库源码版本号为 `4.0.901`。实际发布状态以 GitHub Release、Actions 与安装包验收结果为准，不能从本地源码版本推断用户设备已升级。
 - 官方优先、定制最小化：保留目录、接口、配置与业务行为；优先复用官方能力，不做无关重构、格式化或依赖升级。按功能维护可独立撤销的差异。
 - 每次修复或同步前重新检查最新稳定版、相关提交和 PR 状态，区分已发布、已合并、未合并。先验证需求、配置和数据兼容，再让官方接管；部分覆盖时只保留未覆盖部分。不能因名称相同或发生冲突就删掉必要行为。
 - 冲突逐项按功能解决，不整文件覆盖。涉及实际用户数据时先备份并明确迁移、回滚。同步后更新本表、删除失效兼容代码，再执行对应回归；不保证未经验证的未来版本兼容。
 - 历史版本的上传与构建发布授权只适用于对应发布任务；本次官方同步不自动授权推送、发布、安装或改动真实用户配置。
+
+## UPSTREAM-4.0.9：正式版修复同步
+
+从 v4.0.4 合入官方 v4.0.5–v4.0.9 的 111 个提交，使用正式标签 `v4.0.9`，不包含标签之后的未发布 main 提交。新增 Codex Copilot 托管账号、子代理模型/推理强度设置、模型选择弹窗、压缩会话读取与可选开关、WSL 连接地址；同步 Codex 线程、协议转换、Windows 重启提示、用量统计、Skills、模型列表获取和启动语言等修复。详情见 `docs/release-notes/v4.0.901-zh.md`。
+
+源码版本统一为 `4.0.901`，四种语言摘要涵盖全部本次更新。保留 Desktop/Pi 只导入与显式启用、Codex 深链认证和模型目录、网站 Logo、自定义配置/Token-AI/MX-AI、官方 API 预设及独立更新源、公钥和应用标识。九种应用的旧预设数组位置保持不变，新条目追加到末尾；Pi Agent Plan 按原 providerKey 原位更新官方端点，新增 Coding Plan 另行追加。README 不恢复赞助区，关于页不恢复官方 Star/官网推广。CI 按路径检查和手动 WSL2 完整套件策略不变，采用官方 nextest archive 修复；Windows x86_64/macOS Universal 发布与草稿策略保留。
+
+数据库 schema 仍为 20，无新增结构迁移。新配置字段使用可选值或兼容默认值。新增 Sonnet 5.5/Haiku 5.5 标准档定价通过 `INSERT OR IGNORE` 补缺失项，保留用户自定义价格；本地费用统计同步官方 1h 缓存写入分项和缓存 Token 修复，不发生真实扣费。价格及 5m/1h 倍率已对照 [Anthropic 官方定价](https://platform.claude.com/docs/en/about-claude/pricing)核对；Haiku 长提示词的高档不由当前单行价格表表达。本次不启用会话压缩、不安装、不改真实配置/数据库、不推送或发布。
+
+本地验收（2026-10-12）：
+
+- 冻结锁文件安装、TypeScript、前端格式和 renderer 构建通过；仍有 Vite 大包提示。
+- 前端全量 214 文件、2652 项通过；随后 Pi 预设位置调整的相关 2 文件、29 项复验通过。
+- 九种应用旧预设 ID、四处版本、独立更新源/公钥/应用标识、数据库 schema 和定制入口已核对。三份工作流 YAML 通过；隔离虚拟资产验证 latest.json 生成及三个平台映射，缺少 Windows 签名按预期失败。
+- 固定 Rust 1.95、锁文件及隔离 HOME/TMPDIR 下运行后端全量测试：库测试 3581 项、集成测试 197 项通过，9 项原有忽略；Rust 格式和 `cargo clippy --locked --offline --all-targets -- -D warnings` 通过。
+- Windows 10/11 真机、真实 OAuth/API、真实数据升级和安装包未验收。
 
 ## UPSTREAM-4.0.4：4.0 正式版同步
 
