@@ -196,11 +196,14 @@ export const grokBuildProviderPresets: GrokBuildProviderPreset[] = [
   },
   {
     name: "AIGoCode",
-    websiteUrl: "https://aigocode.app",
-    apiKeyUrl: "https://aigocode.app/invite/CC-SWITCH",
+    websiteUrl: "https://aigocode.net",
+    apiKeyUrl: "https://aigocode.net/invite/CC-SWITCH",
     auth: grokAuth(),
-    config: grokPresetConfig("AIGoCode", "https://api.aigocode.app"),
-    endpointCandidates: ["https://api.aigocode.app"],
+    config: grokPresetConfig("AIGoCode", "https://api.aigocode.dev"),
+    endpointCandidates: [
+      "https://api.aigocode.dev",
+      "https://api.aigocode.app",
+    ],
     category: "third_party",
     isPartner: true,
     partnerPromotionKey: "aigocode",
@@ -292,8 +295,6 @@ export const grokBuildProviderPresets: GrokBuildProviderPreset[] = [
     config: grokPresetConfig("Code0", "https://code0.ai/v1"),
     endpointCandidates: ["https://code0.ai/v1"],
     category: "aggregator",
-    isPartner: true,
-    partnerPromotionKey: "code0",
     icon: "code0",
   },
   {
@@ -759,6 +760,7 @@ export const grokBuildProviderPresets: GrokBuildProviderPreset[] = [
   },
   {
     name: "YYLX",
+    nameKey: "providerForm.presets.yylx",
     websiteUrl: "https://yylx.io",
     apiKeyUrl: "https://app.yylx.io/keys",
     auth: grokAuth(),
@@ -779,5 +781,29 @@ export const grokBuildProviderPresets: GrokBuildProviderPreset[] = [
     config: grokPresetConfig("TokenFlux", "https://tokenflux.dev/v1"),
     category: "aggregator",
     icon: "tokenflux",
+  },
+  // 新增预设追加到末尾，保留现有预设的数组索引与选择 ID。
+  {
+    name: "GrooRoute Pro",
+    websiteUrl: "https://grooroute.pro",
+    apiKeyUrl: "https://grooroute.pro/sign-up?aff=qqm9",
+    auth: grokAuth(),
+    config: grokPresetConfig(
+      "GrooRoute Pro",
+      "https://grooroute.pro/v1",
+      "grok-4.7",
+    ),
+    category: "aggregator",
+    isPartner: true,
+    icon: "grooroute",
+  },
+  {
+    name: "AIComing",
+    websiteUrl: "https://aicoming.top",
+    apiKeyUrl: "https://aicoming.top/console#keys",
+    auth: grokAuth(),
+    config: grokPresetConfig("AIComing", "https://api.aicoming.top/v1"),
+    category: "aggregator",
+    icon: "aicoming",
   },
 ];

@@ -1,0 +1,33 @@
+{
+  "version": "4.0.1201",
+  "items": [
+    {
+      "type": "new",
+      "zh": "应用页支持选择卸载目标并检查 Node 升级要求",
+      "zh-TW": "應用頁支援選擇解除安裝目標並檢查 Node 升級要求",
+      "en": "Manage tool installs, select duplicate removals, and check Node requirements before upgrading",
+      "ja": "アプリ管理で削除対象を選択し、更新前に Node 要件を確認"
+    },
+    {
+      "type": "new",
+      "zh": "新增本地模型分组和多家云服务预设",
+      "zh-TW": "新增本機模型分組和多家雲端服務預設",
+      "en": "New local model presets for Ollama, LM Studio, llama.cpp and vLLM, plus cloud providers",
+      "ja": "ローカルモデルのグループと複数のクラウドプリセットを追加"
+    },
+    {
+      "type": "improve",
+      "zh": "新增本地图标库，增强深链导入并保留网站 Logo",
+      "zh-TW": "新增本機圖示庫，強化深層連結匯入並保留網站 Logo",
+      "en": "Upload reusable icons and import deep links while keeping cached website logos",
+      "ja": "再利用できる画像アイコンを追加、ディープリンクとサイトロゴを改善"
+    },
+    {
+      "type": "fix",
+      "zh": "改进用量扫描与 Codex 统计，修复云同步 Skills 恢复",
+      "zh-TW": "改善用量掃描與 Codex 統計，修復雲端同步 Skills 還原",
+      "en": "Improved usage scans and Codex statistics; fixed Skills recovery during cloud sync",
+      "ja": "使用量の読み込みと Codex 集計を改善、クラウドの Skills 復元を修正"
+    }
+  ]
+}

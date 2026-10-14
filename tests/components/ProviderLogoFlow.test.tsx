@@ -15,6 +15,7 @@ import { deeplinkApi } from "@/lib/api/deeplink";
 import type { Provider, UniversalProvider } from "@/types";
 import { UniversalProviderCard } from "@/components/universal/UniversalProviderCard";
 import { emitTauriEvent } from "../msw/tauriMocks";
+import { setPendingDeepLink } from "../msw/state";
 import { createTestQueryClient } from "../utils/testQueryClient";
 
 const iconProps = vi.hoisted(() => vi.fn());
@@ -140,7 +141,10 @@ describe("provider website logo flow", () => {
       .mockResolvedValue({ type: "provider", id: "preview-relay" });
 
     render(<DeepLinkImportDialog />, { wrapper: Wrapper });
-    act(() => emitTauriEvent("deeplink-import", request));
+    act(() => {
+      setPendingDeepLink({ kind: "import", request });
+      emitTauriEvent("deeplink-pending", null);
+    });
 
     await screen.findByRole("button", { name: "deeplink.import" });
     expect(iconProps).toHaveBeenCalledWith(
@@ -152,7 +156,9 @@ describe("provider website logo flow", () => {
     );
 
     fireEvent.click(screen.getByRole("button", { name: "deeplink.import" }));
-    await waitFor(() => expect(importSpy).toHaveBeenCalledWith(request));
+    await waitFor(() =>
+      expect(importSpy).toHaveBeenCalledWith({ ...request, enabled: false }),
+    );
   });
 
   it("keeps each card's logo source when providers share the same endpoint", () => {

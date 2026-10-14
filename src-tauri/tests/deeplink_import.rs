@@ -326,6 +326,12 @@ fn deeplink_import_codex_provider_builds_auth_and_config() {
         Some(false),
         "API-key imports must not require a manual authentication edit"
     );
+    assert!(
+        !home.join(".codex/config.toml").exists(),
+        "save-only must not activate the first provider"
+    );
+    ProviderService::switch(&state, AppType::Codex, &provider_id)
+        .expect("explicitly enable imported provider");
     let live: toml::Value = toml::from_str(
         &fs::read_to_string(home.join(".codex/config.toml")).expect("read first provider config"),
     )
@@ -372,6 +378,12 @@ fn deeplink_codex_explicit_models_reach_the_live_catalog() {
         2
     );
 
+    assert!(
+        !home.join(".codex/config.toml").exists(),
+        "save-only must not project the model catalog"
+    );
+    ProviderService::switch(&state, AppType::Codex, &provider_id)
+        .expect("explicitly enable model catalog");
     let config: toml::Value = toml::from_str(
         &fs::read_to_string(home.join(".codex/config.toml")).expect("read live Codex config"),
     )
@@ -478,7 +490,8 @@ fn deeplink_codex_import_and_switch_use_the_key_without_manual_edits() {
                         .expect("parse imported config");
                 assert_eq!(
                     config["model_providers"]["custom"]["requires_openai_auth"].as_bool(),
-                    Some(false)
+                    Some(inline_config),
+                    "preserve explicit inline authentication while API-key templates default to false"
                 );
                 assert_eq!(
                     stored.settings_config["auth"]["OPENAI_API_KEY"],
@@ -513,10 +526,16 @@ fn deeplink_codex_import_and_switch_use_the_key_without_manual_edits() {
                             retained.settings_config["auth"]["OPENAI_API_KEY"],
                             "sk-deeplink-test"
                         );
-                        assert!(!retained.settings_config["config"]
-                            .as_str()
-                            .unwrap()
-                            .contains("experimental_bearer_token"));
+                        let retained_config: toml::Value =
+                            toml::from_str(retained.settings_config["config"].as_str().unwrap())
+                                .expect("parse retained config");
+                        assert_eq!(
+                            retained_config["model_providers"]["custom"]
+                                .get("experimental_bearer_token")
+                                .and_then(toml::Value::as_str),
+                            inline_config.then_some("sk-deeplink-test"),
+                            "only explicitly supplied bearer tokens remain in stored templates"
+                        );
                         ProviderService::switch(&state, AppType::Codex, &id)
                             .expect("switch to imported provider again");
                     }

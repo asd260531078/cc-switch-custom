@@ -1,6 +1,6 @@
 use crate::deeplink::{
     import_mcp_from_deeplink, import_prompt_from_deeplink, import_provider_from_deeplink,
-    import_skill_from_deeplink, parse_deeplink_url, DeepLinkImportRequest,
+    import_skill_from_deeplink, parse_deeplink_url, DeepLinkImportRequest, PendingDeepLinkEntry,
 };
 use crate::store::AppState;
 use tauri::{Manager, State};
@@ -10,6 +10,18 @@ use tauri::{Manager, State};
 pub async fn get_provider_logo(app: tauri::AppHandle, icon_url: String) -> Option<String> {
     let root = app.path().app_cache_dir().ok()?.join("provider-logos-v1");
     crate::provider_logo::cached_logo(root, icon_url).await
+}
+
+/// Read the deep link waiting for the frontend without clearing it (see `PendingDeepLink`)
+#[tauri::command]
+pub fn peek_pending_deeplink() -> Option<PendingDeepLinkEntry> {
+    crate::deeplink::peek_pending_deeplink()
+}
+
+/// Clear the pending deep link once the frontend has shown it; ignored if `id` is stale
+#[tauri::command]
+pub fn ack_pending_deeplink(id: u64) {
+    crate::deeplink::ack_pending_deeplink(id);
 }
 
 /// Parse a deep link URL and return the parsed request for frontend confirmation
@@ -27,6 +39,13 @@ pub fn merge_deeplink_config(
 ) -> Result<DeepLinkImportRequest, String> {
     log::info!("Merging config for deep link request: {:?}", request.name);
     crate::deeplink::parse_and_merge_config(&request).map_err(|e| e.to_string())
+}
+
+/// 下载深链接 `iconUrl` 指向的图标，返回核对过类型的 data URI；任何失败都返回 None，
+/// 确认框退回内置图标或首字母（原因只写日志，见 `deeplink::icon_fetch`）
+#[tauri::command]
+pub async fn fetch_deeplink_icon(url: String) -> Option<String> {
+    crate::deeplink::fetch_deeplink_icon(&url).await
 }
 
 /// Import a provider from a deep link request (legacy, kept for compatibility)

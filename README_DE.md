@@ -24,7 +24,7 @@
 
 </div>
 
-Die aktuelle angepasste Quellversion ist `4.0.901`, basierend auf der offiziellen stabilen Version `v4.0.9`. Claude-Desktop/Pi-Importe, Codex-Deep-Link-Authentifizierung, Website-Logos und der Updatekanal dieses Repositorys bleiben erhalten. Die Synchronisierung des Quellcodes bedeutet nicht, dass Installationspakete veröffentlicht wurden. Die folgenden Homebrew- und Linux-Anleitungen beziehen sich auf die offizielle Version.
+Die aktuelle angepasste Quellversion ist `4.0.1201`, basierend auf der offiziellen stabilen Version `v4.0.12`. Claude-Desktop/Pi-Importe, Codex-Deep-Link-Authentifizierung, Website-Logos und der Updatekanal dieses Repositorys bleiben erhalten. Dies ist nur die Vorbereitung des Quellcodes und bedeutet nicht, dass App-Installationspakete veröffentlicht wurden; siehe die [angepassten Versionshinweise](docs/release-notes/v4.0.1201-zh.md). Die folgenden Homebrew- und Linux-Anleitungen beziehen sich auf die offizielle Version.
 
 ## Warum CC Switch?
 
@@ -211,9 +211,9 @@ Ausführliche Anleitungen zu allen Funktionen finden Sie im **[Benutzerhandbuch]
 
 - **Cloud-Synchronisierung** — Geräteübergreifende Synchronisierung über WebDAV (Jianguoyun, Nextcloud, Synology NAS usw.) oder S3-kompatiblen Speicher (AWS S3, Cloudflare R2, Alibaba Cloud OSS, Tencent Cloud COS usw.); alternativ können Sie das CC-Switch-Konfigurationsverzeichnis in einen Cloud-Speicher-Ordner wie Dropbox, OneDrive oder iCloud legen
 - **CLI-Werkzeugverwaltung** — Auf der Seite „Apps“ in der Seitenleiste sehen Sie die installierte und die neueste Version von Kommandozeilenwerkzeugen wie Claude Code und Codex, können sie mit einem Klick installieren, aktualisieren oder alle auf einmal aktualisieren und doppelte Installationen diagnostizieren; unter Windows lassen sich auch Werkzeuge in WSL verwalten (siehe FAQ)
-- **Deep Link** (`ccswitch://`) — Anbieter, MCP-Server und Prompts per Link mit einem Klick importieren oder Skill-Repositorys hinzufügen
+- **Deep Link** (`ccswitch://`) — Anbieter, MCP-Server und Prompts per Link mit einem Klick importieren oder Skill-Repositorys hinzufügen; Links lassen sich mit dem [Online-Generator](https://ccswitch.io/deplink.html) erstellen; Website-Betreiber, die einen Import-Button einbauen möchten, finden alles im [Integrationsleitfaden (Englisch)](https://github.com/farion1231/cc-switch/blob/main/docs/guides/deeplink-site-integration-guide-en.md)
 - **Hilfsprogramme** — Überspringen der Erststart-Bestätigung von Claude Code, Ausblenden der KI-Attribution, Übernahme des in CC Switch gewählten Anbieters durch die Claude-Code-Erweiterung für VS Code und mehr
-- Dunkles / Helles / System-Theme, automatischer Start, automatischer Updater, atomare Schreibvorgänge, automatische Backups (unter „Settings → Data“ sehen Sie Speicherort und Platzbedarf aller Backups), i18n (zh/zh-TW/en/ja)
+- Dunkles / Helles / System-Theme, automatischer Start, automatischer Updater, atomare Schreibvorgänge, automatische Backups (unter „Settings → Data“ sehen Sie Speicherort und Platzbedarf aller Backups), i18n (zh/zh-TW/en/ja, dazu Türkisch als Community-Übersetzung)
 
 ## FAQ
 

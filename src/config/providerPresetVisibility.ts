@@ -23,6 +23,7 @@ export function isVisibleProviderPreset(preset: {
     case "official":
     case "cn_official":
     case "cloud_provider":
+    case "local":
       return true;
     // These configure local agents, rather than a provider service.
     case "omo":

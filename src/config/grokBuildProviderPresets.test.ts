@@ -7,7 +7,6 @@ import {
   extractCodexBaseUrl,
   extractCodexModelName,
 } from "../utils/providerConfigUtils";
-import { GROK_BUILD_DEFAULT_MODEL } from "../utils/grokBuildConfig";
 
 describe("grokBuildProviderPresets", () => {
   it("has unique preset names", () => {
@@ -61,10 +60,8 @@ describe("grokBuildProviderPresets", () => {
         expect(model, preset.name).toBe(officialModels[preset.name]);
         continue;
       }
-      expect(
-        model === GROK_BUILD_DEFAULT_MODEL || model === "x-ai/grok-4.5",
-        `${preset.name}: ${model}`,
-      ).toBe(true);
+      // 中转站可使用厂商前缀及各自支持的 Grok 版本。
+      expect(model, preset.name).toMatch(/^(?:[\w.-]+\/)?grok-[\w.-]+$/);
     }
   });
 

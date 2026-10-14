@@ -18,6 +18,7 @@ import {
   type PresetStepState,
 } from "@/components/providers/forms/presetStep";
 import {
+  PRESET_GROUP_ORDER,
   domainBody,
   groupPresetRows,
   presetGroup,
@@ -26,6 +27,13 @@ import {
 } from "@/components/providers/forms/presetGroups";
 import { providerPresets } from "@/config/claudeProviderPresets";
 import { codexProviderPresets } from "@/config/codexProviderPresets";
+import { claudeDesktopProviderPresets } from "@/config/claudeDesktopProviderPresets";
+import { geminiProviderPresets } from "@/config/geminiProviderPresets";
+import { grokBuildProviderPresets } from "@/config/grokBuildProviderPresets";
+import { hermesProviderPresets } from "@/config/hermesProviderPresets";
+import { openclawProviderPresets } from "@/config/openclawProviderPresets";
+import { opencodeProviderPresets } from "@/config/opencodeProviderPresets";
+import { piProviderPresets } from "@/config/piProviderPresets";
 import {
   PRESET_FAMILIES,
   PRESET_PLAN_KEYS,
@@ -93,6 +101,10 @@ const entries: PresetEntry[] = [
     preset: preset("GitHub Copilot", "third_party", "https://github.com", {
       providerType: "github_copilot",
     }),
+  },
+  {
+    id: "ollama-local",
+    preset: preset("Ollama", "local", "https://ollama.com"),
   },
 ];
 
@@ -177,6 +189,7 @@ describe("preset helpers", () => {
       "vendor",
       "cloud",
       "login",
+      "local",
     ]);
   });
 
@@ -185,7 +198,15 @@ describe("preset helpers", () => {
       getVisiblePresetEntries(entries, { query: "", t }).map(
         (entry) => entry.id,
       ),
-    ).toEqual(["alpha", "bedrock", "gamma", "copilot", "huoshan", "zhipu"]);
+    ).toEqual([
+      "alpha",
+      "bedrock",
+      "gamma",
+      "copilot",
+      "huoshan",
+      "ollama-local",
+      "zhipu",
+    ]);
   });
 
   it("searches display names, domains and aliases but not TLDs", () => {
@@ -197,6 +218,111 @@ describe("preset helpers", () => {
     expect(ids("com")).toEqual([]);
     expect(getPresetDisplayName(entries[1].preset, t)).toBe("Alpha 本地名");
   });
+});
+
+describe("existing preset selection IDs", () => {
+  const catalogs: [string, { name: string }[], Record<string, number>][] = [
+    [
+      "Claude Code",
+      providerPresets,
+      { "Token-AI": 96, "MX-AI": 97, OpenAI: 98, Claude: 99, OpenModel: 103 },
+    ],
+    [
+      "Claude Desktop",
+      claudeDesktopProviderPresets,
+      { "Token-AI": 92, "MX-AI": 93, OpenAI: 94, Claude: 95, OpenModel: 97 },
+    ],
+    [
+      "Codex",
+      codexProviderPresets,
+      {
+        "Token-AI": 95,
+        "MX-AI": 96,
+        OpenAI: 97,
+        Claude: 98,
+        Gemini: 99,
+        OpenModel: 103,
+      },
+    ],
+    [
+      "Gemini",
+      geminiProviderPresets,
+      { "Token-AI": 27, "MX-AI": 28, Gemini: 29, OpenModel: 30 },
+    ],
+    [
+      "Grok Build",
+      grokBuildProviderPresets,
+      {
+        "Token-AI": 40,
+        "MX-AI": 41,
+        OpenAI: 42,
+        Claude: 43,
+        Gemini: 44,
+        OpenModel: 45,
+      },
+    ],
+    [
+      "Hermes",
+      hermesProviderPresets,
+      {
+        "Token-AI": 84,
+        "MX-AI": 85,
+        OpenAI: 86,
+        Claude: 87,
+        Gemini: 88,
+        OpenModel: 90,
+      },
+    ],
+    [
+      "OpenClaw",
+      openclawProviderPresets,
+      {
+        "Token-AI": 83,
+        "MX-AI": 84,
+        OpenAI: 85,
+        Claude: 86,
+        Gemini: 87,
+        OpenModel: 90,
+      },
+    ],
+    [
+      "OpenCode",
+      opencodeProviderPresets,
+      {
+        "Token-AI": 83,
+        "MX-AI": 84,
+        OpenAI: 85,
+        Claude: 86,
+        Gemini: 87,
+        OpenModel: 90,
+      },
+    ],
+    [
+      "Pi",
+      piProviderPresets,
+      {
+        "Token-AI": 78,
+        "MX-AI": 79,
+        OpenAI: 80,
+        Claude: 81,
+        Gemini: 82,
+        OpenModel: 86,
+      },
+    ],
+  ];
+
+  it.each(catalogs)(
+    "%s preserves the existing featured and official API selection IDs",
+    (_, presets, positions) => {
+      for (const [name, index] of Object.entries(positions)) {
+        expect(presets[index]?.name, `${name} at ${index}`).toBe(name);
+        expect(
+          presets.filter((preset) => preset.name === name),
+          name,
+        ).toHaveLength(1);
+      }
+    },
+  );
 });
 
 describe("preset families", () => {
@@ -229,15 +355,15 @@ describe("preset families", () => {
 
   it("merges Claude's preset versions while keeping custom additions", () => {
     const claudeEntries = providerPresets
-      .filter((item) => !item.hidden)
-      .map((item, index) => ({ id: `claude-${index}`, preset: item }));
-    expect(groupPresetRows(claudeEntries)).toHaveLength(86);
+      .map((item, index) => ({ id: `claude-${index}`, preset: item }))
+      .filter((entry) => !entry.preset.hidden);
+    expect(groupPresetRows(claudeEntries)).toHaveLength(106);
   });
 
   it("orders plans and regions as the design does where a family says so", () => {
     const claudeEntries = providerPresets
-      .filter((item) => !item.hidden)
-      .map((item, index) => ({ id: `claude-${index}`, preset: item }));
+      .map((item, index) => ({ id: `claude-${index}`, preset: item }))
+      .filter((entry) => !entry.preset.hidden);
     const versionsOf = (family: string) =>
       groupPresetRows(claudeEntries)
         .find((row) => row.family === family)
@@ -320,6 +446,7 @@ describe("preset families", () => {
       ["vendor", ["huoshan", "family:kimi", "zhipu"]],
       ["thirdparty", ["gamma"]],
       ["cloud", ["bedrock"]],
+      ["local", ["ollama-local"]],
     ]);
     expect(sections("gamma")).toEqual([["thirdparty", ["gamma"]]]);
   });
@@ -348,6 +475,21 @@ describe("preset families", () => {
     for (const locale of [zh, zhTW, en, ja]) {
       for (const key of keys) {
         expect(typeof lookup(locale, key), key).toBe("string");
+      }
+    }
+  });
+
+  it("has a label and a hint for every category in all four locales", () => {
+    for (const [name, locale] of Object.entries({ zh, zhTW, en, ja })) {
+      const { group, groupHint } = locale.providerPreset as unknown as Record<
+        "group" | "groupHint",
+        Record<string, unknown>
+      >;
+      for (const key of PRESET_GROUP_ORDER) {
+        expect(typeof group[key], `${name} group.${key}`).toBe("string");
+        expect(typeof groupHint[key], `${name} groupHint.${key}`).toBe(
+          "string",
+        );
       }
     }
   });
@@ -462,7 +604,7 @@ describe("ProviderPresetSelector", () => {
     render(<TwoSteps onPresetChange={onPresetChange} />);
 
     const host = await screen.findByTestId("host");
-    // 自定义配置固定第一行；其余按分类分段（账号登录 → 模型厂商 → 第三方平台 → 云服务商），段内按名称
+    // 自定义配置固定第一行；其余按分类分段（账号登录 → 模型厂商 → 第三方平台 → 云服务商 → 本地），段内按名称
     const rows = within(host)
       .getAllByRole("button")
       .filter((button) => !button.hasAttribute("aria-pressed"));
@@ -476,6 +618,7 @@ describe("ProviderPresetSelector", () => {
       "providerPreset.group.vendor",
       "providerPreset.group.thirdparty",
       "providerPreset.group.cloud",
+      "providerPreset.group.local",
     ]);
     const login = within(host).getByRole("region", {
       name: "providerPreset.group.login",
