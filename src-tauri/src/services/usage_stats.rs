@@ -2619,8 +2619,13 @@ pub(crate) fn find_model_pricing_row(
         return Ok(None);
     }
 
+    // Preserve distinct, explicitly configured IDs before falling back to the
+    // normalized/case-insensitive lookup. SQLite's primary key is case-sensitive.
+    if let Some(row) = query_model_pricing_exact(conn, model_id.trim(), true)? {
+        return Ok(Some(row));
+    }
     for candidate in &candidates {
-        if let Some(row) = query_model_pricing_exact(conn, candidate)? {
+        if let Some(row) = query_model_pricing_exact(conn, candidate, false)? {
             return Ok(Some(row));
         }
     }
@@ -2668,13 +2673,17 @@ pub(crate) fn is_placeholder_pricing_model(model_id: &str) -> bool {
 fn query_model_pricing_exact(
     conn: &Connection,
     model_id: &str,
+    case_sensitive: bool,
 ) -> Result<Option<(String, String, String, String)>, AppError> {
     conn.query_row(
         "SELECT input_cost_per_million, output_cost_per_million,
                 cache_read_cost_per_million, cache_creation_cost_per_million
          FROM model_pricing
-         WHERE model_id = ?1",
-        [model_id],
+         WHERE model_id = ?1 COLLATE NOCASE
+           AND (?2 = 0 OR model_id = ?1 COLLATE BINARY)
+         ORDER BY (model_id = ?1 COLLATE BINARY) DESC, model_id COLLATE BINARY
+         LIMIT 1",
+        rusqlite::params![model_id, case_sensitive],
         |row| {
             Ok((
                 row.get::<_, String>(0)?,
@@ -5813,6 +5822,57 @@ mod tests {
         assert_eq!(input, "0.84");
         assert_eq!(output, "4.2");
 
+        Ok(())
+    }
+
+    #[test]
+    fn test_pricing_lookup_matches_custom_rows_with_uppercase_model_id() -> Result<(), AppError> {
+        // 回归 #8413：自定义定价常按界面显示名原样入库（如 GLM-5.3-Flash-EXL3），
+        // 而查价候选会被 clean_model_id_for_pricing 小写归一化；若精确匹配大小写
+        // 敏感，这类行永远命中不了，成本恒为 0。查价必须大小写不敏感。
+        let db = Database::memory()?;
+        let conn = lock_conn!(db.conn);
+
+        conn.execute(
+            "INSERT OR REPLACE INTO model_pricing (
+                model_id, display_name, input_cost_per_million, output_cost_per_million,
+                cache_read_cost_per_million, cache_creation_cost_per_million
+            ) VALUES ('GLM-5.3-Flash-EXL3', 'GLM-5.3-Flash-EXL3', '1.4', '4.4', '0.26', '0')",
+            [],
+        )?;
+
+        let row = find_model_pricing_row(&conn, "GLM-5.3-Flash-EXL3")?;
+        assert!(row.is_some(), "小写候选应能命中按大写入库的自定义定价行");
+        let (input, output, ..) = row.unwrap();
+        assert_eq!(input, "1.4");
+        assert_eq!(output, "4.4");
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_pricing_case_collisions_preserve_exact_custom_price() -> Result<(), AppError> {
+        let db = Database::memory()?;
+        let conn = lock_conn!(db.conn);
+        for (id, price) in [("case-test-model", "1"), ("CASE-TEST-MODEL", "9")] {
+            conn.execute(
+                "INSERT INTO model_pricing (model_id, display_name, input_cost_per_million,
+                 output_cost_per_million, cache_read_cost_per_million, cache_creation_cost_per_million)
+                 VALUES (?1, ?1, ?2, '2', '0', '0')", rusqlite::params![id, price]
+            )?;
+        }
+        assert_eq!(
+            find_model_pricing_row(&conn, "CASE-TEST-MODEL")?.unwrap().0,
+            "9"
+        );
+        assert_eq!(
+            find_model_pricing_row(&conn, "case-test-model")?.unwrap().0,
+            "1"
+        );
+        assert_eq!(
+            find_model_pricing_row(&conn, "Case-Test-Model")?.unwrap().0,
+            "1"
+        );
         Ok(())
     }
 

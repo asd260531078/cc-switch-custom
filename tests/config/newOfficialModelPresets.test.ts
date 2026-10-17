@@ -41,7 +41,8 @@ describe("new official model import presets", () => {
     for (const model of piOpenAI.settingsConfig.models.filter((entry) =>
       openaiIds.includes(entry.id),
     )) {
-      expect(model.contextWindow).toBe(1_050_000);
+      // v4.0.15 对所有 GPT 预设统一按订阅窗口封顶。
+      expect(model.contextWindow).toBe(272_000);
       expect(model.maxTokens).toBe(128_000);
     }
     expect(piOpenAI.settingsConfig.api).toBe("openai-responses");

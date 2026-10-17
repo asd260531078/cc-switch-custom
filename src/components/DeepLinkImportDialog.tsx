@@ -231,6 +231,14 @@ export function DeepLinkImportDialog() {
             queryKey: ["claudeDesktopStatus"],
           });
         }
+        if (request.app === "opencode") {
+          await queryClient.invalidateQueries({
+            queryKey: ["opencodeLiveProviderIds"],
+          });
+          await queryClient.invalidateQueries({
+            queryKey: ["opencode", "runtime-models"],
+          });
+        }
       };
       const refreshMcp = async (summary: {
         importedCount: number;
@@ -975,6 +983,11 @@ export function DeepLinkImportDialog() {
                   )}
 
                   {/* Warning */}
+                  {request.app === "claude-desktop" && (
+                    <p className="text-sm text-fg-2">
+                      {t("deeplink.desktopImportHint")}
+                    </p>
+                  )}
                   {request.app === "pi" && (
                     <p className="text-sm text-fg-2">
                       {t("deeplink.piImportHint")}

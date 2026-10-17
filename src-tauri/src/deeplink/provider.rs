@@ -108,18 +108,26 @@ pub fn import_provider_from_deeplink(
     // Build provider configuration based on app type
     let mut provider = build_provider_from_request(&app_type, &merged_request)?;
 
-    // Generate a unique ID for the provider using timestamp + sanitized name
-    let timestamp = chrono::Utc::now().timestamp_millis();
-    let sanitized_name = name
-        .chars()
-        .filter(|c| c.is_alphanumeric() || *c == '-' || *c == '_')
-        .collect::<String>()
-        .to_lowercase();
     provider.id = if app_type == AppType::Pi {
-        // Pi IDs are native provider keys. Repeated imports must never replace
-        // an existing entry, including imports within the same millisecond.
+        // Pi IDs are native provider keys; repeated imports must never replace an entry.
         format!("cc-switch-{}", uuid::Uuid::new_v4())
+    } else if matches!(app_type, AppType::OpenCode) {
+        // Display names may be Unicode, but new OpenCode IDs must pass the editor's slug validation.
+        let slug = name
+            .split(|c: char| !c.is_ascii_alphanumeric())
+            .filter(|part| !part.is_empty())
+            .collect::<Vec<_>>()
+            .join("-")
+            .to_ascii_lowercase();
+        let slug = if slug.is_empty() { "provider" } else { &slug };
+        format!("{slug}-{}", uuid::Uuid::new_v4().simple())
     } else {
+        let timestamp = chrono::Utc::now().timestamp_millis();
+        let sanitized_name = name
+            .chars()
+            .filter(|c| c.is_alphanumeric() || *c == '-' || *c == '_')
+            .collect::<String>()
+            .to_lowercase();
         format!("{sanitized_name}-{timestamp}")
     };
 
@@ -136,7 +144,9 @@ pub fn import_provider_from_deeplink(
         merged_request.enabled.unwrap_or(false)
     };
 
-    if activate || additive {
+    let desktop_needs_routing = app_type == AppType::ClaudeDesktop
+        && crate::claude_desktop_config::needs_routing(&provider);
+    if additive || (activate && app_type != AppType::ClaudeDesktop) {
         ProviderService::add(state, app_type.clone(), provider, activate)?;
     } else {
         ProviderService::add_without_switching(state, app_type.clone(), provider)?;
@@ -162,7 +172,19 @@ pub fn import_provider_from_deeplink(
 
     // If enabled=true, set as current provider
     if !additive && activate {
-        ProviderService::switch(state, app_type.clone(), &provider_id)?;
+        if desktop_needs_routing && !crate::mode::current::is_proxy(&app_type) {
+            // The explicit Desktop import action also opts into the local route
+            // required by this card. Keep the direct pointer for leaving routing.
+            tauri::async_runtime::block_on(crate::mode::controller::enter_with_route(
+                state,
+                &app_type,
+                false,
+                Some(&provider_id),
+            ))
+            .map_err(AppError::Message)?;
+        } else {
+            ProviderService::switch(state, app_type.clone(), &provider_id)?;
+        }
         log::info!("Provider '{provider_id}' set as current for {app_type:?}");
     }
 

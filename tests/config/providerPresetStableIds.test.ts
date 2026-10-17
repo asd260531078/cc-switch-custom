@@ -1,0 +1,241 @@
+import { describe, expect, it } from "vitest";
+import { providerPresets } from "@/config/claudeProviderPresets";
+import { claudeDesktopProviderPresets } from "@/config/claudeDesktopProviderPresets";
+import { codexProviderPresets } from "@/config/codexProviderPresets";
+import { geminiProviderPresets } from "@/config/geminiProviderPresets";
+import { grokBuildProviderPresets } from "@/config/grokBuildProviderPresets";
+import { hermesProviderPresets } from "@/config/hermesProviderPresets";
+import { openclawProviderPresets } from "@/config/openclawProviderPresets";
+import { opencodeProviderPresets } from "@/config/opencodeProviderPresets";
+import { piProviderPresets } from "@/config/piProviderPresets";
+
+// 选择 ID 使用数组下标；官方新增预设必须追加，旧预设不能被插入挤走。
+const catalogs: Array<{
+  app: string;
+  presets: Array<{ name: string }>;
+  oldCount: number;
+  stableIds: Array<[number, string]>;
+  appended: string[];
+}> = [
+  {
+    app: "claude",
+    presets: providerPresets,
+    oldCount: 133,
+    stableIds: [
+      [0, "Claude Official"],
+      [12, "Shengsuanyun"],
+      [85, "GitHub Copilot"],
+      [86, "Codex"],
+      [87, "xAI (Grok)"],
+      [89, "PIPELLM"],
+      [95, "AICodeWith"],
+      [96, "Token-AI"],
+      [97, "MX-AI"],
+      [98, "OpenAI"],
+      [99, "Claude"],
+      [100, "Grok"],
+      [101, "Command Code"],
+      [102, "模力方舟"],
+      [103, "OpenModel"],
+      [104, "SoruxGPT"],
+      [110, "GrooRoute Pro"],
+      [132, "AIComing"],
+    ],
+    appended: ["TokenFactory", "Modelflare", "EveryAPI", "AllTokens"],
+  },
+  {
+    app: "claudeDesktop",
+    presets: claudeDesktopProviderPresets,
+    oldCount: 125,
+    stableIds: [
+      [0, "Claude Desktop Official"],
+      [12, "Shengsuanyun"],
+      [51, "GitHub Copilot"],
+      [52, "Codex"],
+      [53, "xAI (Grok)"],
+      [87, "PIPELLM"],
+      [91, "AICodeWith"],
+      [92, "Token-AI"],
+      [93, "MX-AI"],
+      [94, "OpenAI"],
+      [95, "Claude"],
+      [96, "Grok"],
+      [97, "OpenModel"],
+      [98, "SoruxGPT"],
+      [104, "GrooRoute Pro"],
+      [124, "AIComing"],
+    ],
+    appended: ["TokenFactory", "Modelflare", "EveryAPI", "AllTokens"],
+  },
+  {
+    app: "codex",
+    presets: codexProviderPresets,
+    oldCount: 133,
+    stableIds: [
+      [0, "OpenAI Official"],
+      [12, "Shengsuanyun"],
+      [81, "xAI (Grok)"],
+      [90, "PIPELLM"],
+      [94, "AICodeWith"],
+      [95, "Token-AI"],
+      [96, "MX-AI"],
+      [97, "OpenAI"],
+      [98, "Claude"],
+      [99, "Gemini"],
+      [100, "Command Code"],
+      [101, "模力方舟"],
+      [102, "GitHub Copilot"],
+      [103, "OpenModel"],
+      [104, "SoruxGPT"],
+      [110, "GrooRoute Pro"],
+      [132, "AIComing"],
+    ],
+    appended: ["TokenFactory", "Modelflare", "EveryAPI", "AllTokens"],
+  },
+  {
+    app: "gemini",
+    presets: geminiProviderPresets,
+    oldCount: 37,
+    stableIds: [
+      [0, "Google Official"],
+      [4, "Shengsuanyun"],
+      [25, "AICodeWith"],
+      [27, "Token-AI"],
+      [28, "MX-AI"],
+      [29, "Gemini"],
+      [30, "OpenModel"],
+      [31, "SoruxGPT"],
+      [36, "AIComing"],
+    ],
+    appended: ["Modelflare", "AllTokens"],
+  },
+  {
+    app: "grokBuild",
+    presets: grokBuildProviderPresets,
+    oldCount: 54,
+    stableIds: [
+      [0, "PackyCode"],
+      [7, "Shengsuanyun"],
+      [31, "xAI (Grok)"],
+      [37, "PIPELLM"],
+      [40, "Token-AI"],
+      [41, "MX-AI"],
+      [42, "OpenAI"],
+      [43, "Claude"],
+      [44, "Gemini"],
+      [45, "OpenModel"],
+      [46, "SoruxGPT"],
+      [52, "GrooRoute Pro"],
+      [53, "AIComing"],
+    ],
+    appended: ["Modelflare", "AllTokens"],
+  },
+  {
+    app: "hermes",
+    presets: hermesProviderPresets,
+    oldCount: 118,
+    stableIds: [
+      [0, "Kimi"],
+      [10, "Shengsuanyun"],
+      [79, "PIPELLM"],
+      [83, "AICodeWith"],
+      [84, "Token-AI"],
+      [85, "MX-AI"],
+      [86, "OpenAI"],
+      [87, "Claude"],
+      [88, "Gemini"],
+      [89, "Grok"],
+      [90, "OpenModel"],
+      [91, "SoruxGPT"],
+      [97, "GrooRoute Pro"],
+      [117, "AIComing"],
+    ],
+    appended: ["TokenFactory", "Modelflare", "EveryAPI", "AllTokens"],
+  },
+  {
+    app: "openclaw",
+    presets: openclawProviderPresets,
+    oldCount: 118,
+    stableIds: [
+      [0, "Kimi"],
+      [10, "Shengsuanyun"],
+      [78, "PIPELLM"],
+      [82, "AICodeWith"],
+      [83, "Token-AI"],
+      [84, "MX-AI"],
+      [85, "OpenAI"],
+      [86, "Claude"],
+      [87, "Gemini"],
+      [88, "Grok"],
+      [89, "模力方舟"],
+      [90, "OpenModel"],
+      [91, "SoruxGPT"],
+      [97, "GrooRoute Pro"],
+      [117, "AIComing"],
+    ],
+    appended: ["TokenFactory", "Modelflare", "EveryAPI", "AllTokens"],
+  },
+  {
+    app: "opencode",
+    presets: opencodeProviderPresets,
+    oldCount: 106,
+    stableIds: [
+      [0, "Kimi"],
+      [10, "Shengsuanyun"],
+      [76, "PIPELLM"],
+      [82, "AICodeWith"],
+      [83, "Token-AI"],
+      [84, "MX-AI"],
+      [85, "OpenAI"],
+      [86, "Claude"],
+      [87, "Gemini"],
+      [88, "Grok"],
+      [89, "模力方舟"],
+      [90, "OpenModel"],
+      [91, "SoruxGPT"],
+      [97, "GrooRoute Pro"],
+      [105, "AIComing"],
+    ],
+    appended: ["TokenFactory", "Modelflare", "EveryAPI", "AllTokens"],
+  },
+  {
+    app: "pi",
+    presets: piProviderPresets,
+    oldCount: 112,
+    stableIds: [
+      [0, "Kimi"],
+      [10, "Shengsuanyun"],
+      [66, "PIPELLM"],
+      [67, "AICodeWith"],
+      [78, "Token-AI"],
+      [79, "MX-AI"],
+      [80, "OpenAI"],
+      [81, "Claude"],
+      [82, "Gemini"],
+      [83, "Grok"],
+      [85, "模力方舟"],
+      [86, "OpenModel"],
+      [88, "SoruxGPT"],
+      [94, "GrooRoute Pro"],
+      [111, "AIComing"],
+    ],
+    appended: ["TokenFactory", "Modelflare", "EveryAPI", "AllTokens"],
+  },
+];
+
+describe("provider preset selection IDs across the v4.0.15 sync", () => {
+  it.each(catalogs)(
+    "$app retains old selection IDs and appends official additions",
+    ({ presets, oldCount, stableIds, appended }) => {
+      for (const [index, name] of stableIds) {
+        expect(presets[index]?.name, name).toBe(name);
+      }
+      expect(presets.slice(oldCount).map((preset) => preset.name)).toEqual(
+        appended,
+      );
+      expect(new Set(presets.map((preset) => preset.name)).size).toBe(
+        presets.length,
+      );
+    },
+  );
+});

@@ -141,6 +141,45 @@ fn desktop_settings_path(home: &Path) -> PathBuf {
 }
 
 #[test]
+fn deeplink_import_opencode_generates_editable_ids_and_preserves_display_names() {
+    let _guard = test_mutex().lock().unwrap_or_else(|e| e.into_inner());
+    reset_test_fs();
+    let _home = ensure_test_home();
+    let db = Arc::new(Database::memory().expect("create memory db"));
+    let state = AppState::new(db.clone());
+    let key_pattern = regex::Regex::new(r"^[a-z0-9]+(-[a-z0-9]+)*$").unwrap();
+    let mut ids = std::collections::HashSet::new();
+
+    for name in ["中文供应商", "公司 AI", "Test_Provider", "---", "🚀"] {
+        // Repeated imports must still create distinct records, even in the same millisecond.
+        for _ in 0..2 {
+            let mut url = url::Url::parse("ccswitch://v1/import").unwrap();
+            url.query_pairs_mut().extend_pairs([
+                ("resource", "provider"),
+                ("app", "opencode"),
+                ("name", name),
+                ("endpoint", "https://example.com/v1"),
+                ("apiKey", "public-test-key"),
+                ("model", "example-model"),
+            ]);
+            let request = parse_deeplink_url(url.as_str()).unwrap();
+            let id = import_provider_from_deeplink(&state, request).unwrap();
+            assert!(key_pattern.is_match(&id), "uneditable provider ID: {id}");
+            assert!(ids.insert(id.clone()), "duplicate provider ID: {id}");
+            let providers = db.get_all_providers("opencode").unwrap();
+            let provider = providers.get(&id).unwrap();
+            assert_eq!(provider.name, name);
+            let live: serde_json::Value = serde_json::from_slice(
+                &std::fs::read(_home.join(".config/opencode/opencode.json")).unwrap(),
+            )
+            .unwrap();
+            assert_eq!(live["provider"][&id], provider.settings_config);
+        }
+    }
+    assert_eq!(db.get_all_providers("opencode").unwrap().len(), ids.len());
+}
+
+#[test]
 fn deeplink_import_claude_provider_persists_to_db() {
     let _guard = test_mutex().lock().unwrap_or_else(|e| e.into_inner());
     reset_test_fs();
@@ -1022,6 +1061,11 @@ fn deeplink_desktop_enabled_import_switches_and_writes_isolated_profile() {
     clean_desktop_fixtures(home);
 
     let db = Arc::new(Database::memory().expect("create memory db"));
+    tauri::async_runtime::block_on(async {
+        let mut config = db.get_proxy_config().await.unwrap();
+        config.listen_port = 0;
+        db.update_proxy_config(config).await.unwrap();
+    });
     let state = AppState::new(db.clone());
     let url = provider_url(
         DESKTOP_APP,
@@ -1079,7 +1123,12 @@ fn deeplink_desktop_enabled_import_switches_and_writes_isolated_profile() {
         ),
     );
     assert_eq!(
-        db.get_current_provider(DESKTOP_APP).unwrap(),
+        cc_switch_lib::mode::current::provider_for(
+            &db,
+            &AppType::ClaudeDesktop,
+            cc_switch_lib::mode::current::Purpose::InUse
+        )
+        .unwrap(),
         Some(proxy_id)
     );
     let profile = desktop_profile(home);
@@ -1092,6 +1141,176 @@ fn deeplink_desktop_enabled_import_switches_and_writes_isolated_profile() {
         .unwrap()
         .ends_with("/claude-desktop"));
     assert_eq!(profile["inferenceModels"].as_array().unwrap().len(), 3);
+    assert_eq!(
+        db.get_current_provider(DESKTOP_APP).unwrap(),
+        Some(provider_id)
+    );
+    tauri::async_runtime::block_on(state.proxy_service.stop()).unwrap();
+}
+
+#[cfg(any(target_os = "macos", windows))]
+#[test]
+fn deeplink_desktop_route_import_preserves_direct_pointer_and_existing_mode() {
+    use cc_switch_lib::mode::controller::{app_mode_view, enter_with_route};
+    let _guard = test_mutex().lock().expect("acquire test mutex");
+    for official_current in [false, true] {
+        reset_test_fs();
+        let home = ensure_test_home();
+        clean_desktop_fixtures(home);
+        let db = Arc::new(Database::memory().unwrap());
+        let direct_id = if official_current {
+            db.init_default_official_providers().unwrap();
+            let id = db
+                .get_all_providers(DESKTOP_APP)
+                .unwrap()
+                .into_values()
+                .find(|provider| provider.category.as_deref() == Some("official"))
+                .unwrap()
+                .id;
+            db.set_current_provider(DESKTOP_APP, &id).unwrap();
+            update_settings(AppSettings {
+                current_provider_claude_desktop: Some(id.clone()),
+                ..Default::default()
+            })
+            .unwrap();
+            Some(id)
+        } else {
+            None
+        };
+        tauri::async_runtime::block_on(async {
+            let mut config = db.get_proxy_config().await.unwrap();
+            config.listen_port = 0;
+            db.update_proxy_config(config).await.unwrap();
+        });
+        let state = AppState::new(db.clone());
+        let link = |name: &str, enabled: &str| {
+            provider_url(
+                DESKTOP_APP,
+                name,
+                &[
+                    ("endpoint", "https://desktop-route.example.com/v1"),
+                    ("apiKey", "fixture-route-key"),
+                    ("model", "Original.Model/大写"),
+                    ("apiFormat", "openai_responses"),
+                    ("enabled", enabled),
+                ],
+            )
+        };
+        let mut active_id = import_url(&state, &link("Enter Route", "true"));
+        let view = app_mode_view(&state, &AppType::ClaudeDesktop).unwrap();
+        assert_eq!(view.mode, "route");
+        assert!(view.attached);
+        assert_eq!(view.route_provider_id.as_deref(), Some(active_id.as_str()));
+        assert_eq!(view.direct_provider_id, direct_id);
+        assert_eq!(db.get_current_provider(DESKTOP_APP).unwrap(), direct_id);
+        assert!(tauri::async_runtime::block_on(
+            state.proxy_service.is_running()
+        ));
+        let meta = provider_meta_json(
+            &db.get_provider_by_id(&active_id, DESKTOP_APP)
+                .unwrap()
+                .unwrap(),
+        );
+        assert!(meta["claudeDesktopModelRoutes"]
+            .as_object()
+            .unwrap()
+            .values()
+            .any(|route| route["model"] == "Original.Model/大写"));
+        for stack in [false, true] {
+            if stack {
+                tauri::async_runtime::block_on(enter_with_route(
+                    &state,
+                    &AppType::ClaudeDesktop,
+                    true,
+                    Some(&active_id),
+                ))
+                .unwrap();
+            }
+            let mode_before = fs::read(home.join(".cc-switch/live-state.json")).unwrap();
+            let settings_before = fs::read(desktop_settings_path(home)).unwrap();
+            let files_before = snapshot_desktop_files(home);
+            import_url(
+                &state,
+                &link(
+                    if stack {
+                        "Save In Stack"
+                    } else {
+                        "Save In Route"
+                    },
+                    "false",
+                ),
+            );
+            assert_eq!(
+                fs::read(home.join(".cc-switch/live-state.json")).unwrap(),
+                mode_before
+            );
+            assert_eq!(
+                fs::read(desktop_settings_path(home)).unwrap(),
+                settings_before
+            );
+            assert_eq!(snapshot_desktop_files(home), files_before);
+            active_id = import_url(
+                &state,
+                &link(
+                    if stack {
+                        "Switch In Stack"
+                    } else {
+                        "Switch In Route"
+                    },
+                    "true",
+                ),
+            );
+            let view = app_mode_view(&state, &AppType::ClaudeDesktop).unwrap();
+            assert_eq!(view.mode, if stack { "stack" } else { "route" });
+            assert_eq!(view.route_provider_id.as_deref(), Some(active_id.as_str()));
+            assert_eq!(view.direct_provider_id, direct_id);
+        }
+        tauri::async_runtime::block_on(state.proxy_service.stop()).unwrap();
+    }
+}
+
+#[cfg(any(target_os = "macos", windows))]
+#[test]
+fn deeplink_desktop_route_start_failure_keeps_live_configuration() {
+    let _guard = test_mutex().lock().expect("acquire test mutex");
+    reset_test_fs();
+    let home = ensure_test_home();
+    clean_desktop_fixtures(home);
+    let blocker = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let db = Arc::new(Database::memory().unwrap());
+    tauri::async_runtime::block_on(async {
+        let mut config = db.get_proxy_config().await.unwrap();
+        config.listen_port = blocker.local_addr().unwrap().port();
+        db.update_proxy_config(config).await.unwrap();
+    });
+    let state = AppState::new(db.clone());
+    let settings_before = fs::read(desktop_settings_path(home)).unwrap();
+    let files_before = snapshot_desktop_files(home);
+    let request = parse_deeplink_url(&provider_url(
+        DESKTOP_APP,
+        "Blocked Route",
+        &[
+            ("endpoint", "https://desktop-route.example.com/v1"),
+            ("apiKey", "fixture-route-key"),
+            ("model", "custom-model"),
+            ("enabled", "true"),
+        ],
+    ))
+    .unwrap();
+    assert!(import_provider_from_deeplink(&state, request).is_err());
+    assert_eq!(db.get_all_providers(DESKTOP_APP).unwrap().len(), 1);
+    assert_eq!(db.get_current_provider(DESKTOP_APP).unwrap(), None);
+    assert!(!cc_switch_lib::mode::current::is_proxy(
+        &AppType::ClaudeDesktop
+    ));
+    assert!(!tauri::async_runtime::block_on(
+        state.proxy_service.is_running()
+    ));
+    assert_eq!(
+        fs::read(desktop_settings_path(home)).unwrap(),
+        settings_before
+    );
+    assert_eq!(snapshot_desktop_files(home), files_before);
 }
 
 #[test]

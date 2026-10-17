@@ -1,0 +1,33 @@
+{
+  "version": "4.0.1501",
+  "items": [
+    {
+      "type": "new",
+      "zh": "Desktop 支持直连、路由与聚合，保留只导入和显式启用",
+      "zh-TW": "Desktop 支援直連、路由與聚合，保留僅匯入和明確啟用",
+      "en": "Desktop adds direct, routing and aggregation modes while keeping save-only imports",
+      "ja": "Desktop に直結・ルーティング・集約を追加、保存のみの取込も維持"
+    },
+    {
+      "type": "new",
+      "zh": "Codex 可选审批与子代理模型，用量页支持多币种和图表样式",
+      "zh-TW": "Codex 可選審批與子代理模型，用量頁支援多幣別和圖表樣式",
+      "en": "Choose Codex review and subagent models; customize usage currencies and charts",
+      "ja": "Codex の承認・サブエージェントモデル、使用量の通貨とグラフを設定"
+    },
+    {
+      "type": "fix",
+      "zh": "修复 Windows 设置重置、Codex 更新误卸载和终端路径",
+      "zh-TW": "修復 Windows 設定重設、Codex 更新誤移除和終端機路徑",
+      "en": "Fix Windows settings resets, accidental Codex removal during updates, and terminal paths",
+      "ja": "Windows 設定リセット、Codex 更新時の誤削除、端末パスを修正"
+    },
+    {
+      "type": "fix",
+      "zh": "修复工具历史、云同步和用量统计，绿色版更新沿用本站通道",
+      "zh-TW": "修復工具歷史、雲端同步和用量統計，可攜版更新沿用本站通道",
+      "en": "Fix tool history, cloud sync and usage; portable updates stay on the custom release channel",
+      "ja": "ツール履歴・同期・使用量を修正、ポータブル更新は独自配布元を維持"
+    }
+  ]
+}

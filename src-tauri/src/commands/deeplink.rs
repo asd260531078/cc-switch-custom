@@ -77,8 +77,15 @@ pub async fn import_from_deeplink_unified(
 
     match request.resource.as_str() {
         "provider" => {
-            let provider_id =
-                import_provider_from_deeplink(&state, request).map_err(|e| e.to_string())?;
+            // Import may wait for the mode lock or start Desktop's local route.
+            // Keep synchronous import work off the async command's runtime thread.
+            let state = state.inner().clone();
+            let provider_id = tauri::async_runtime::spawn_blocking(move || {
+                import_provider_from_deeplink(&state, request)
+            })
+            .await
+            .map_err(|e| format!("Provider import task failed: {e}"))?
+            .map_err(|e| e.to_string())?;
             Ok(serde_json::json!({
                 "type": "provider",
                 "id": provider_id
