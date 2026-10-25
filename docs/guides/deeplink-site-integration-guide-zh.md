@@ -6,6 +6,8 @@
 
 > 适用版本：CC Switch v4.0.10 及以上。文中标了「v4.0.10 起」的行为在更早的版本上不同，差异见文末「兼容旧版本」。本文根据当前代码整理，示例里的域名和 Key 都是假的。
 
+> 本仓库定制差异：支持 `app=claude-desktop`（含三个别名）；Desktop/Pi 在确认框中选择「只导入」或显式启用，Pi 缺省只保存。任意 `usageScript` 必须显式 `usageEnabled=true` 才启用；`iconUrl` 独立保存在元数据，经后端校验和缓存，导入不等待图片下载。以下官方指南涉及这些差异时以本说明和 [定制清单](../local-customizations.md)、[Pi 契约](../pi-deeplink-import-zh.md) 为准。
+
 ## 这篇写给谁
 
 你运营一个 API 服务（中转站、聚合平台、自建网关都算），想让用户在你的控制台点一下按钮，就把你的地址、Key、模型，以及余额查询，一起加进 CC Switch，不用再手动填表。
@@ -62,7 +64,7 @@ ccswitch://v1/import?resource=<类型>&<参数>...
 2. CC Switch 弹出导入确认框，展示链接里的全部内容：地址、打码后的 Key、模型、附带的配置原文、用量查询脚本全文。可疑的内容会标黄提示，例如指向本机或内网的地址、能改变进程加载行为的环境变量（`NODE_OPTIONS`、`LD_PRELOAD` 之类）、用 shell 执行整段命令的 MCP。
 3. 用户点「导入」后：
    - **供应商**：加进对应应用的供应商列表。确认框底部有一个开关，初始值取链接里的 `enabled`，用户可以改：
-     - Claude Code、Codex、Gemini CLI、Grok Build：开关是「导入后立即切换到这个供应商」，默认关闭。打开时确认框会提示「客户端请求会改发到上面的地址」。
+     - Claude Code、Codex、Gemini CLI、Antigravity CLI、Grok Build：开关是「导入后立即切换到这个供应商」，默认关闭。打开时确认框会提示「客户端请求会改发到上面的地址」。
      - OpenCode、OpenClaw、Hermes、Pi：这些应用可以同时放多个供应商，开关是「导入后立即添加到应用配置」（Pi 叫「启用」），默认打开；关掉则只保存在 CC Switch 的列表里。
    - **MCP**：立即写进 `apps` 里列出的每个应用的配置文件。
    - **提示词**：加进提示词列表。确认框里有「导入后立即启用」开关，初始值取链接里的 `enabled`；打开时会替换这个应用当前的提示词文件，原来启用的提示词被停用。
@@ -92,13 +94,14 @@ ccswitch://v1/import?resource=provider&app=claude&name=Example%20AI&endpoint=htt
 | `claude` | Claude Code | `anthropic` | 四种都可以 | `{"env": {...}}`，`env` 里的变量全部保留 |
 | `codex` | Codex | `openai_responses` | `openai_responses`、`openai_chat`、`anthropic` | 整份或部分 `config.toml`，见下文 |
 | `gemini` | Gemini CLI | `gemini_native` | 只有 `gemini_native` | `GEMINI_API_KEY`、`GOOGLE_GEMINI_BASE_URL`、`GEMINI_MODEL` 三个键，其他忽略 |
+| `agy` | Antigravity CLI | `gemini_native` | 只有 `gemini_native` | 扁平 Gemini 环境键或 `{env, config:{model:{name}}}`；URL 参数优先，模型优先取 `config.model.name`；其他原生选项忽略 |
 | `grokbuild` | Grok Build | `openai_responses` | `openai_responses`、`openai_chat`、`anthropic` | 一张 `[model."<名称>"]` 表，见下文 |
 | `opencode` | OpenCode | `openai_chat` | 四种都可以 | 只取地址和 Key |
 | `openclaw` | OpenClaw | `openai_chat` | 四种都可以 | 只取地址和 Key |
 | `hermes` | Hermes | `openai_chat` | `openai_chat`、`openai_responses`、`anthropic` | 只取地址和 Key |
 | `pi` | Pi | `openai_chat` | 四种都可以 | 只取地址和 Key |
 
-Claude Desktop、MiniMax Code 的供应商暂不支持深链接导入，链接会被拒绝。
+本仓库支持 Claude Desktop 供应商深链，详见上述定制差异；MiniMax Code 的供应商深链仍不支持。
 
 `apiFormat` 在不同应用里落到不同的地方：
 
@@ -407,14 +410,14 @@ Sub2API 自带给 CC Switch 用的 `GET /v1/usage` 接口，用 API Key 认证�
 
 **MCP**（`resource=mcp`）
 
-- `apps` 必填，逗号分隔：`claude`、`codex`、`gemini`、`grokbuild`、`opencode`、`hermes`、`pi`、`mcode`。`openclaw` 会被忽略。
+- `apps` 必填，逗号分隔：`claude`、`codex`、`gemini`、`agy`、`grokbuild`、`opencode`、`hermes`、`pi`、`mcode`。`openclaw` 会被忽略。
 - `config` 是 Base64 的 `{"mcpServers": {"<ID>": {...}}}`，一条链接可以带多个服务器。
 - 用户已经有同 ID 的服务器时，只会给它勾上新的应用，配置内容不会被链接覆盖。想更新配置请换一个 ID。
 - 导入即写入客户端配置文件。`enabled` 参数目前不起作用。
 
 **提示词**（`resource=prompt`）
 
-- `app` 取 `claude`、`codex`、`gemini`、`grokbuild`、`opencode`、`pi`、`mcode`。`openclaw`、`hermes` 在 CC Switch 里由工作区编辑器和记忆管理负责，不建议用深链接分发提示词。
+- `app` 取 `claude`、`codex`、`gemini`、`agy`、`grokbuild`、`opencode`、`pi`、`mcode`。`openclaw`、`hermes` 在 CC Switch 里由工作区编辑器和记忆管理负责，不建议用深链接分发提示词。
 - `name`、`content`（Base64 的 Markdown）必填，`description` 可选。
 - `enabled` 是确认框里「导入后立即启用」开关的初始值。启用会用这段内容替换用户当前的提示词文件（如 `CLAUDE.md`），一般不要写。
 

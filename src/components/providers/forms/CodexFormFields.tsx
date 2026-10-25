@@ -56,6 +56,7 @@ import {
   DirectModeFormatWarning,
   EndpointField,
   FullUrlToggle,
+  GptContextWindowHint,
   ModelDropdown,
   type DirectModeFormatNotice,
 } from "./shared";
@@ -1677,6 +1678,11 @@ export function CodexFormFields({
               <Trash2 className="h-4 w-4" />
             </Button>
           </HoverTip>
+          <GptContextWindowHint
+            modelId={row.model}
+            contextWindow={row.contextWindow}
+            className="col-span-full px-1"
+          />
         </div>
       ))}
     </div>
@@ -2002,7 +2008,7 @@ export function CodexFormFields({
                 type="button"
                 variant={null}
                 size="sm"
-                className="h-8 w-full justify-start gap-1.5 px-0 text-sm font-medium text-fg-1 hover:opacity-70"
+                className="h-8 w-full justify-start gap-1.5 px-0 text-sm font-medium text-fg-1 hover:opacity-70 active:scale-100"
               >
                 {stackAdvancedExpanded ? (
                   <ChevronDown className="h-4 w-4" />
@@ -2249,7 +2255,7 @@ export function CodexFormFields({
               type="button"
               variant={null}
               size="sm"
-              className="h-8 w-full justify-start gap-1.5 px-0 text-sm font-medium text-fg-1 hover:opacity-70"
+              className="h-8 w-full justify-start gap-1.5 px-0 text-sm font-medium text-fg-1 hover:opacity-70 active:scale-100"
             >
               {advancedExpanded ? (
                 <ChevronDown className="h-4 w-4" />

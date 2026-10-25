@@ -36,6 +36,7 @@ import { Switch } from "@/components/ui/switch";
 import { getAppLabel, isAdditiveAppId } from "@/config/appConfig";
 import {
   CODING_PLAN_PROVIDERS,
+  codingPlanEnabledByDefault,
   detectCodingPlanProvider,
 } from "@/config/codingPlanProviders";
 
@@ -56,6 +57,8 @@ const API_FORMAT_LABELS: Record<
  * 一直是写进去的，初始值保持打开；切换式应用和提示词默认关闭。
  */
 function initialActivation(request: DeepLinkImportRequest): boolean {
+  // Antigravity 的卡没有「启用」，只导入（后端同样忽略 enabled）
+  if (request.resource === "provider" && request.app === "agy") return false;
   if (
     request.resource === "provider" &&
     request.app &&
@@ -77,6 +80,9 @@ export function DeepLinkImportDialog() {
     request?.resource === "provider" &&
     (request.app === "claude-desktop" || request.app === "pi");
   const [activateAfterImport, setActivateAfterImport] = useState(false);
+  // 当前显示的请求：导入是异步的，期间可能来了新链接把确认框换掉，
+  // 导入结束时只在确认框仍显示这条请求时才关闭，否则新链接的确认框会被一起关掉
+  const shownRequestRef = useRef<DeepLinkImportRequest | null>(null);
 
   // 容错判断：MCP 导入结果可能缺少 type 字段
   const isMcpImportResult = (
@@ -139,6 +145,7 @@ export function DeepLinkImportDialog() {
       if (disposed) return false;
       // 与请求一起初始化，避免弹窗先显示旧开关状态，再由 effect 更新。
       setActivateAfterImport(initialActivation(next));
+      shownRequestRef.current = next;
       setRequest(next);
       setIsOpen(true);
       return true;
@@ -330,8 +337,8 @@ export function DeepLinkImportDialog() {
         });
       }
 
-      // Close dialog after all refreshes complete
-      setIsOpen(false);
+      // Close dialog after all refreshes complete, unless a newer link replaced it meanwhile
+      if (shownRequestRef.current === request) setIsOpen(false);
     } catch (error) {
       console.error("Failed to import from deep link:", error);
       toast.error(t("deeplink.importError"), {
@@ -364,9 +371,10 @@ export function DeepLinkImportDialog() {
       ? CODING_PLAN_PROVIDERS.find((cp) => cp.id === detectedCodingPlan)
       : undefined;
 
-  // Arbitrary scripts require explicit opt-in; built-in coding-plan queries keep their default.
-  // （与后端一致）
-  const usageWillBeEnabled = request?.usageEnabled ?? Boolean(codingPlan);
+  // Arbitrary scripts require explicit opt-in; fixed plan queries follow their defaults.
+  const usageWillBeEnabled =
+    request?.usageEnabled ??
+    (codingPlan ? codingPlanEnabledByDefault(codingPlan.id) : false);
 
   // Check if config file is present
   const hasConfigFile = !!(request?.config || request?.configUrl);
@@ -745,9 +753,16 @@ export function DeepLinkImportDialog() {
                           )}
 
                           {/* Gemini config */}
-                          {parsedConfig.type === "gemini" &&
+                          {(parsedConfig.type === "gemini" ||
+                            parsedConfig.type === "agy") &&
                             parsedConfig.env && (
                               <div className="space-y-1.5">
+                                {parsedConfig.model && (
+                                  <EnvRow
+                                    envKey="model"
+                                    value={parsedConfig.model}
+                                  />
+                                )}
                                 {Object.entries(parsedConfig.env).map(
                                   ([key, value]) => (
                                     <EnvRow
@@ -947,7 +962,7 @@ export function DeepLinkImportDialog() {
                     </div>
                   )}
 
-                  {!hasProviderActivationChoice && (
+                  {!hasProviderActivationChoice && request.app !== "agy" && (
                     <>
                       {/*
                     导入后是否立即生效由用户决定，链接里的 enabled 只是初始值。切换式应用打开后

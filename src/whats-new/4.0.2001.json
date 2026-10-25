@@ -1,0 +1,33 @@
+{
+  "version": "4.0.2001",
+  "items": [
+    {
+      "type": "new",
+      "zh": "新增 Antigravity、Kimi Code 和 Oh My Pi 管理",
+      "zh-TW": "新增 Antigravity、Kimi Code 和 Oh My Pi 管理",
+      "en": "Manage Antigravity, Kimi Code and Oh My Pi",
+      "ja": "Antigravity・Kimi Code・Oh My Pi の管理に対応"
+    },
+    {
+      "type": "improve",
+      "zh": "新增托盘面板、应用拖动排序和托管账号浏览器登录",
+      "zh-TW": "新增系統匣面板、應用拖曳排序和託管帳號瀏覽器登入",
+      "en": "Tray panel, app ordering and browser login for managed accounts",
+      "ja": "トレイパネル、アプリ並べ替え、管理アカウントのブラウザログインを追加"
+    },
+    {
+      "type": "fix",
+      "zh": "修复 Windows 更新重启、会话统计、额度查询和 Skills 下载",
+      "zh-TW": "修正 Windows 更新重啟、會話統計、額度查詢和 Skills 下載",
+      "en": "Fix Windows update restarts, usage, quota queries and Skills downloads",
+      "ja": "Windows 更新時の再起動、使用量・残高照会、Skills ダウンロードを修正"
+    },
+    {
+      "type": "improve",
+      "zh": "保留 Desktop/Pi 导入、网站 Logo、定制预设和独立更新通道",
+      "zh-TW": "保留 Desktop/Pi 匯入、網站 Logo、客製預設和獨立更新通道",
+      "en": "Keep Desktop/Pi imports, website logos, custom presets and updater",
+      "ja": "Desktop/Pi 取込、サイト Logo、独自プリセットと更新元を維持"
+    }
+  ]
+}

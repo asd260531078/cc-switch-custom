@@ -12,6 +12,7 @@ export interface DeepLinkImportRequest {
     | "claude-desktop"
     | "codex"
     | "gemini"
+    | "agy"
     | "grokbuild"
     | "opencode"
     | "openclaw"
