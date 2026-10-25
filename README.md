@@ -24,7 +24,7 @@ English | [中文](README_ZH.md) | [日本語](README_JA.md) | [Deutsch](README_
 
 </div>
 
-The current custom source version is `4.0.2001`, based on the official `v4.0.20` stable release. It retains Claude Desktop/Pi imports, Codex deep-link authentication, website logos, and this repository’s update channel. This is source preparation only and does not mean App packages have been published; see the [custom source release notes](docs/release-notes/v4.0.2001-zh.md). The Homebrew and Linux instructions below refer to the upstream distribution.
+The current custom version is `4.0.2001`, based on the official `v4.0.20` stable release. It retains Claude Desktop/Pi imports, Codex deep-link authentication, website logos, and this repository’s update channel. Windows x64 and macOS Universal packages are [published here](https://github.com/asd260531078/cc-switch-custom/releases/tag/v4.0.2001); see the [custom release notes](docs/release-notes/v4.0.2001-zh.md) for verification and upgrade guidance. The Homebrew and Linux instructions below refer to the upstream distribution.
 
 ## Why CC Switch?
 

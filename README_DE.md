@@ -24,7 +24,7 @@
 
 </div>
 
-Die aktuelle angepasste Quellversion ist `4.0.2001`, basierend auf der offiziellen stabilen Version `v4.0.20`. Claude-Desktop/Pi-Importe, Codex-Deep-Link-Authentifizierung, Website-Logos und der Updatekanal dieses Repositorys bleiben erhalten. Dies ist nur die Vorbereitung des Quellcodes und bedeutet nicht, dass App-Installationspakete veröffentlicht wurden; siehe die [angepassten Versionshinweise](docs/release-notes/v4.0.2001-zh.md). Die folgenden Homebrew- und Linux-Anleitungen beziehen sich auf die offizielle Version.
+Die aktuelle angepasste Version ist `4.0.2001`, basierend auf der offiziellen stabilen Version `v4.0.20`. Claude-Desktop/Pi-Importe, Codex-Deep-Link-Authentifizierung, Website-Logos und der Updatekanal dieses Repositorys bleiben erhalten. Pakete für Windows x64 und macOS Universal sind [hier veröffentlicht](https://github.com/asd260531078/cc-switch-custom/releases/tag/v4.0.2001); Prüfergebnisse und Upgrade-Hinweise stehen in den [angepassten Versionshinweisen](docs/release-notes/v4.0.2001-zh.md). Die folgenden Homebrew- und Linux-Anleitungen beziehen sich auf die offizielle Version.
 
 ## Warum CC Switch?
 
