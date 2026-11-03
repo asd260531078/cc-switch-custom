@@ -5,7 +5,7 @@
 - 本项目仓库：[asd260531078/cc-switch-custom](https://github.com/asd260531078/cc-switch-custom)。`origin` 用于本项目上传；官方仓库为 `farion1231/cc-switch`，同步时按官方标签抓取并核实，不将其作为推送目标。
 - 仓库初始化时仅有 Apache 2.0 许可证，其[原始记录](https://github.com/asd260531078/cc-switch-custom/blob/186fdb999d30a77aa95106bd05f7e5758004299c/LICENSE)保留在 Git 历史中；合入官方源码后，根目录 `LICENSE` 沿用官方 MIT 及原版权声明。
 - 上游唯一基线：[farion1231/cc-switch](https://github.com/farion1231/cc-switch)。本地起点为官方 `v3.20.2` / `f3b18df12007d0fd79fd8ad8d310880664015197`，分支 `codex/fix-claude-desktop-deeplink`。
-- 当前本地代码合入官方正式版 `v4.0.25` / `a3eafa408ae679db2e3401fca767ed2b89d9a2b2`，定制源码版本为 `4.0.2501`。已公开的定制最新版为 `v4.0.2001`，发布源码固定为 `afbff1cd`。
+- 当前代码合入官方正式版 `v4.0.25` / `a3eafa408ae679db2e3401fca767ed2b89d9a2b2`，定制源码版本为 `4.0.2501`。[当前公开的定制安装包](https://github.com/asd260531078/cc-switch-custom/releases/latest)
 - 官方优先、定制最小化：保留目录、接口、配置与业务行为；优先复用官方能力，不做无关重构、格式化或依赖升级。按功能维护可独立撤销的差异。
 - 每次修复或同步前重新检查最新稳定版、相关提交和 PR 状态，区分已发布、已合并、未合并。先验证需求、配置和数据兼容，再让官方接管；部分覆盖时只保留未覆盖部分。不能因名称相同或发生冲突就删掉必要行为。
 - 冲突逐项按功能解决，不整文件覆盖。涉及实际用户数据时先备份并明确迁移、回滚。同步后更新本表、删除失效兼容代码，再执行对应回归；不保证未经验证的未来版本兼容。
