@@ -1,0 +1,26 @@
+{
+  "version": "4.0.2501",
+  "items": [
+    {
+      "type": "new",
+      "zh": "支持 DeepSeek Harness 和 Claude 官方多账号切换",
+      "zh-TW": "支援 DeepSeek Harness 和 Claude 官方多帳號切換",
+      "en": "Manage DeepSeek Harness and switch between Claude subscription accounts",
+      "ja": "DeepSeek Harness 管理と Claude の複数アカウント切り替えに対応"
+    },
+    {
+      "type": "new",
+      "zh": "新增 MCP 连通性检查、Codex 官方额度保护和自动汇率",
+      "zh-TW": "新增 MCP 連線檢查、Codex 官方額度保護和自動匯率",
+      "en": "Check MCP connections, protect Codex quota, and fetch exchange rates automatically",
+      "ja": "MCP 接続確認、Codex の利用枠保護、為替レートの自動取得を追加"
+    },
+    {
+      "type": "fix",
+      "zh": "本地路由拦截网页请求，修复 Windows 供应商表单闪动",
+      "zh-TW": "本機路由攔截網頁請求，修正 Windows 供應商表單閃爍",
+      "en": "Block browser requests to the local router and fix Windows provider form flicker",
+      "ja": "ローカルルーターへのブラウザーリクエストを遮断し、Windows の入力欄のちらつきを修正"
+    }
+  ]
+}

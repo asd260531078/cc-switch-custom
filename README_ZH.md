@@ -24,7 +24,7 @@
 
 </div>
 
-本仓库当前定制版为 `4.0.2001`，基于官方 `v4.0.20` 正式版，保留 Claude Desktop/Pi 导入、Codex 深链认证、网站 Logo 和本仓库更新通道。[Windows x64/macOS Universal 安装包已发布](https://github.com/asd260531078/cc-switch-custom/releases/tag/v4.0.2001)，验收与升级要求见[二开更新说明](docs/release-notes/v4.0.2001-zh.md)。下文 Homebrew、Linux 安装方式属于官方发行版。
+本仓库当前定制源码版本为 `4.0.2501`，基于官方 `v4.0.25` 正式版，保留 Claude Desktop/Pi 导入、Codex 深链认证、网站 Logo 和本仓库更新通道。已公开的最新版安装包为 [v4.0.2001（Windows x64/macOS Universal）](https://github.com/asd260531078/cc-switch-custom/releases/tag/v4.0.2001)。本次改动和升级要求见[二开更新说明](docs/release-notes/v4.0.2501-zh.md)。下文 Homebrew、Linux 安装方式属于官方发行版。
 
 ## 为什么选择 CC Switch？
 
@@ -139,20 +139,20 @@ paru -S cc-switch-bin
 
 ### 各工具支持的功能
 
-| 工具 | 供应商 | 本地路由 | 聚合 | 托盘切换 | MCP | Skills | 提示词 | 会话 | 用量统计 |
-| --- | --- | :---: | :---: | :---: | :---: | :---: | --- | :---: | :---: |
-| Claude Code | 切换 | ✓ | ✓ | ✓ | ✓ | ✓ | CLAUDE.md | ✓ | ✓ |
-| Claude Desktop | 切换 | 模型映射时 | – | ✓ | – | – | – | – | 模型映射时 |
-| Codex | 切换 | ✓ | ✓ | ✓ | ✓ | ✓ | AGENTS.md | ✓ | ✓ |
-| Gemini CLI | 切换 | ✓ | – | ✓ | ✓ | ✓ | GEMINI.md | ✓ | ✓ |
-| Grok Build | 切换 | ✓ | – | ✓ | ✓ | ✓ | AGENTS.md | ✓ | ✓ |
-| OpenCode | 共存 | – | – | – | ✓ | ✓ | AGENTS.md | ✓ | ✓ |
-| OpenClaw | 共存 | – | – | – | – | – | 工作区编辑器 | ✓ | – |
-| Hermes | 共存 | – | – | – | ✓ | ✓ | 记忆管理 | ✓ | – |
-| Pi | 共存 | – | – | – | ✓ | ✓ | AGENTS.md、SYSTEM.md、提示词模板 | ✓ | ✓ |
-| MiniMax Code | 共存 | – | – | – | ✓ | ✓ | AGENTS.md | ✓ | ✓ |
-| [Kimi Code](docs/kimi-code-integration-zh.md) | 共存 | – | – | – | ✓ | ✓ | AGENTS.md | ✓ | ✓ |
-| Oh My Pi | 共存 | – | – | – | ✓ | ✓ | AGENTS.md | ✓ | – |
+| 工具                                          | 供应商 |  本地路由  | 聚合 | 托盘切换 | MCP | Skills | 提示词                           | 会话 |  用量统计  |
+| --------------------------------------------- | ------ | :--------: | :--: | :------: | :-: | :----: | -------------------------------- | :--: | :--------: |
+| Claude Code                                   | 切换   |     ✓      |  ✓   |    ✓     |  ✓  |   ✓    | CLAUDE.md                        |  ✓   |     ✓      |
+| Claude Desktop                                | 切换   | 模型映射时 |  –   |    ✓     |  –  |   –    | –                                |  –   | 模型映射时 |
+| Codex                                         | 切换   |     ✓      |  ✓   |    ✓     |  ✓  |   ✓    | AGENTS.md                        |  ✓   |     ✓      |
+| Gemini CLI                                    | 切换   |     ✓      |  –   |    ✓     |  ✓  |   ✓    | GEMINI.md                        |  ✓   |     ✓      |
+| Grok Build                                    | 切换   |     ✓      |  –   |    ✓     |  ✓  |   ✓    | AGENTS.md                        |  ✓   |     ✓      |
+| OpenCode                                      | 共存   |     –      |  –   |    –     |  ✓  |   ✓    | AGENTS.md                        |  ✓   |     ✓      |
+| OpenClaw                                      | 共存   |     –      |  –   |    –     |  –  |   –    | 工作区编辑器                     |  ✓   |     –      |
+| Hermes                                        | 共存   |     –      |  –   |    –     |  ✓  |   ✓    | 记忆管理                         |  ✓   |     –      |
+| Pi                                            | 共存   |     –      |  –   |    –     |  ✓  |   ✓    | AGENTS.md、SYSTEM.md、提示词模板 |  ✓   |     ✓      |
+| MiniMax Code                                  | 共存   |     –      |  –   |    –     |  ✓  |   ✓    | AGENTS.md                        |  ✓   |     ✓      |
+| [Kimi Code](docs/kimi-code-integration-zh.md) | 共存   |     –      |  –   |    –     |  ✓  |   ✓    | AGENTS.md                        |  ✓   |     ✓      |
+| Oh My Pi                                      | 共存   |     –      |  –   |    –     |  ✓  |   ✓    | AGENTS.md                        |  ✓   |     –      |
 
 - **切换**：同一时间只启用一个供应商；**共存**：多个供应商同时写入工具自身的配置，在工具里选择使用。
 - **本地路由**：由 CC Switch 在本机转发请求并转换接口格式，见下方[本地路由与故障转移](#本地路由与故障转移)。Claude Desktop 的供应商可选“直连”或“模型映射”，选“模型映射”时经本地路由转发。

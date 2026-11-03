@@ -24,7 +24,7 @@
 
 </div>
 
-本リポジトリの現在のカスタム版は `4.0.2001` で、公式安定版 `v4.0.20` をベースにしています。Claude Desktop/Pi のインポート、Codex のディープリンク認証、Web サイトのロゴ、本リポジトリの更新チャネルを維持しています。[Windows x64/macOS Universal パッケージを公開しました](https://github.com/asd260531078/cc-switch-custom/releases/tag/v4.0.2001)。検証結果と更新時の注意は[カスタム版のリリースノート](docs/release-notes/v4.0.2001-zh.md)を参照してください。以下の Homebrew および Linux のインストール手順は公式配布版向けです。
+本リポジトリのカスタム版ソースは公式安定版 `v4.0.25` をベースにした `4.0.2501` です。Claude Desktop/Pi のインポート、Codex のディープリンク認証、Web サイトのロゴ、本リポジトリの更新チャネルを維持しています。公開済みの最新版は [Windows x64/macOS Universal 向けの v4.0.2001](https://github.com/asd260531078/cc-switch-custom/releases/tag/v4.0.2001) です。変更内容と更新時の注意は[カスタム版のリリースノート](docs/release-notes/v4.0.2501-zh.md)を参照してください。以下の Homebrew および Linux のインストール手順は公式配布版向けです。
 
 ## CC Switch を選ぶ理由
 

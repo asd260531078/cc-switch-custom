@@ -614,7 +614,6 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
       api_key: "",
       api_mode: "chat_completions",
       models: [
-        { id: "deepseek-v4-pro", name: "DeepSeek V4 Pro" },
         { id: "deepseek-v4-flash-0731", name: "DeepSeek V4 Flash 0731" },
         { id: "deepseek-v4.1-flash", name: "DeepSeek V4.1 Flash" },
         { id: "deepseek-v3.2", name: "DeepSeek V3.2" },
@@ -629,7 +628,7 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
     partnerPromotionKey: "fluxa",
     icon: "fluxa",
     suggestedDefaults: {
-      model: { default: "deepseek-v4-pro", provider: "fluxa_tokenplan" },
+      model: { default: "deepseek-v4.1-flash", provider: "fluxa_tokenplan" },
     },
   },
   {
@@ -817,11 +816,6 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
           context_length: 1048576,
         },
         { id: "zai-org/glm-5.3", name: "GLM-5.3", context_length: 1000000 },
-        {
-          id: "deepseek/deepseek-v4-pro",
-          name: "DeepSeek V4 Pro",
-          context_length: 1000000,
-        },
       ],
     },
     category: "aggregator",
@@ -1062,10 +1056,12 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
           context_length: 1000000,
         },
         { id: "moonshotai/Kimi-K3", name: "Kimi K3", context_length: 1048576 },
+        // 2026-10-25 起 DeepSeek 一律用 Flash（Pro 贵且效果不如 Flash），
+        // 国际站模型页同有 V4 Flash
         {
-          id: "deepseek-ai/DeepSeek-V4-Pro",
-          name: "DeepSeek V4 Pro",
-          context_length: 1000000,
+          id: "deepseek-ai/DeepSeek-V4-Flash",
+          name: "DeepSeek V4 Flash",
+          context_length: 1048576,
         },
       ],
     },
@@ -1083,11 +1079,11 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
   },
   {
     name: "A6API",
-    websiteUrl: "https://www.a6api.com",
-    apiKeyUrl: "https://a6api.com/register?aff=AqNr",
+    websiteUrl: "https://www.a6api.vip",
+    apiKeyUrl: "https://a6api.vip/register?aff=AqNr",
     settingsConfig: {
       name: "a6api",
-      base_url: "https://api.a6api.com/v1",
+      base_url: "https://api.a6api.vip/v1",
       api_key: "",
       api_mode: "chat_completions",
       models: [
@@ -1674,11 +1670,6 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
       api_mode: "chat_completions",
       models: [
         {
-          id: "deepseek-v4-pro",
-          name: "DeepSeek V4 Pro",
-          context_length: 1000000,
-        },
-        {
           id: "deepseek-flash",
           name: "DeepSeek V4.1 Flash",
           context_length: 1000000,
@@ -1834,7 +1825,6 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
       models: [
         { id: "tc-code-latest", name: "Auto" },
         { id: "deepseek-v4-flash-202605", name: "DeepSeek V4 Flash" },
-        { id: "deepseek-v4-pro-202606", name: "DeepSeek V4 Pro" },
         { id: "minimax-m2.7", name: "MiniMax M2.7" },
         { id: "glm-5", name: "GLM-5" },
         { id: "glm-5.1", name: "GLM-5.1" },
@@ -1869,7 +1859,6 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
         { id: "auto", name: "Auto" },
         { id: "glm-5.2", name: "GLM-5.2" },
         { id: "kimi-k2.6", name: "Kimi K2.6" },
-        { id: "deepseek-v4-pro-202606", name: "DeepSeek V4 Pro" },
         { id: "deepseek-v4-flash-202605", name: "DeepSeek V4 Flash" },
         { id: "minimax-m3", name: "MiniMax M3" },
       ],
@@ -1908,11 +1897,8 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
         { id: "kimi-k2.6", name: "Kimi K2.6" },
         { id: "minimax-m3", name: "MiniMax M3" },
         { id: "deepseek-v4-flash", name: "DeepSeek V4 Flash" },
-        { id: "deepseek-v4-pro", name: "DeepSeek V4 Pro" },
         { id: "deepseek-v4-flash-0731", name: "DeepSeek V4 Flash 0731 GA" },
-        { id: "deepseek-v4-pro-0813", name: "DeepSeek V4 Pro 0813 GA" },
         { id: "deepseek-v4-flash-202605", name: "DeepSeek V4 Flash Official" },
-        { id: "deepseek-v4-pro-202606", name: "DeepSeek V4 Pro Official" },
       ],
     },
     category: "cn_official",
@@ -1947,11 +1933,8 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
         { id: "kimi-k2.7-code", name: "Kimi K2.7 Code" },
         { id: "kimi-k2.7-code-highspeed", name: "Kimi K2.7 Code HighSpeed" },
         { id: "deepseek-v4-flash", name: "DeepSeek V4 Flash" },
-        { id: "deepseek-v4-pro", name: "DeepSeek V4 Pro" },
         { id: "deepseek-v4-flash-0731", name: "DeepSeek V4 Flash 0731 GA" },
-        { id: "deepseek-v4-pro-0813", name: "DeepSeek V4 Pro 0813 GA" },
         { id: "deepseek-v4-flash-202605", name: "DeepSeek V4 Flash Official" },
-        { id: "deepseek-v4-pro-202606", name: "DeepSeek V4 Pro Official" },
       ],
     },
     category: "cn_official",
@@ -2019,7 +2002,8 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
     // 千帆 Token Plan 个人版（2026-07-13 起替代 Coding Plan 发售）：官方
     // Hermes 接入页确认 /v2/tokenplan/personal、默认 deepseek-v4-pro（其
     // api_mode 写 "openai_messages"，本仓 OpenAI Chat 端点惯例统一映射为
-    // chat_completions）；阵容=Token Plan 主文档 2026-08-14 版六模型
+    // chat_completions）；阵容=Token Plan 主文档 2026-08-14 版六模型。
+    // 2026-10-25 起去掉 deepseek-v4-pro（贵且效果不如 Flash），默认改用 V4 Flash
     name: "Baidu Qianfan Token Plan",
     websiteUrl: "https://cloud.baidu.com/product/codingplan.html",
     apiKeyUrl: "https://console.bce.baidu.com/qianfan/resource/token-plan",
@@ -2029,7 +2013,6 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
       api_key: "",
       api_mode: "chat_completions",
       models: [
-        { id: "deepseek-v4-pro", name: "DeepSeek V4 Pro" },
         { id: "deepseek-v4-flash", name: "DeepSeek V4 Flash" },
         { id: "deepseek-v4-flash-0731", name: "DeepSeek V4 Flash 0731" },
         { id: "glm-5.2", name: "GLM-5.2" },
@@ -2041,7 +2024,7 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
     icon: "baidu",
     iconColor: "#2932E1",
     suggestedDefaults: {
-      model: { default: "deepseek-v4-pro", provider: "qianfan_tokenplan" },
+      model: { default: "deepseek-v4-flash", provider: "qianfan_tokenplan" },
     },
   },
   {
@@ -2053,7 +2036,7 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
       "https://platform.qianwenai.com/home/api-keys?utm_content=g_20000002972",
     settingsConfig: {
       name: "qianwenai",
-      base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1",
+      base_url: "https://maas.qianwenaiapi.com/compatible-mode/v1",
       api_key: "",
       api_mode: "chat_completions",
       models: [
@@ -2103,8 +2086,7 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
       "https://platform.qianwenai.com/home/api-keys?utm_content=g_20000002978",
     settingsConfig: {
       name: "qianwenai_token_plan",
-      base_url:
-        "https://token-plan.cn-beijing.maas.aliyuncs.com/apps/anthropic",
+      base_url: "https://token-plan.maas.qianwenaiapi.com/apps/anthropic",
       api_key: "",
       api_mode: "anthropic_messages",
       models: [
@@ -2127,7 +2109,7 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
     apiKeyUrl: "https://home.qwencloud.com/api-keys?utm_content=g_20000002975",
     settingsConfig: {
       name: "qwencloud",
-      base_url: "https://dashscope-intl.aliyuncs.com/apps/anthropic",
+      base_url: "https://ap-southeast-1.maas.qwencloudapi.com/apps/anthropic",
       api_key: "",
       api_mode: "anthropic_messages",
       models: [
@@ -2180,8 +2162,7 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
     apiKeyUrl: "https://home.qwencloud.com/api-keys?utm_content=g_20000002981",
     settingsConfig: {
       name: "qwencloud_token_plan",
-      base_url:
-        "https://token-plan.ap-southeast-1.maas.aliyuncs.com/apps/anthropic",
+      base_url: "https://token-plan.maas.qwencloudapi.com/apps/anthropic",
       api_key: "",
       api_mode: "anthropic_messages",
       models: [
@@ -2264,7 +2245,8 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
     family: "streamlake",
     regionKey: "cn",
     websiteUrl: "https://www.streamlake.com",
-    apiKeyUrl: "https://console.streamlake.com/console/wanqing/api-key",
+    apiKeyUrl:
+      "https://console.streamlake.com/console/wanqing/api-key?channel=ccswitch",
     settingsConfig: {
       name: "streamlake",
       base_url:
@@ -3058,11 +3040,11 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
   },
   {
     name: "TokenFlux",
-    websiteUrl: "https://tokenflux.dev",
-    apiKeyUrl: "https://tokenflux.dev/keys",
+    websiteUrl: "https://tokenflux.com",
+    apiKeyUrl: "https://tokenflux.com/keys",
     settingsConfig: {
       name: "tokenflux",
-      base_url: "https://tokenflux.dev",
+      base_url: "https://tokenflux.com",
       api_key: "",
       api_mode: "anthropic_messages",
       models: [
@@ -3129,7 +3111,7 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
     family: "streamlake",
     regionKey: "intl",
     websiteUrl: "https://console.streamlake.ai",
-    apiKeyUrl: "https://console.streamlake.ai/console/api-key",
+    apiKeyUrl: "https://console.streamlake.ai/console/api-key?channel=ccswitch",
     settingsConfig: {
       name: "streamlake_en",
       base_url:
@@ -3202,11 +3184,6 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
           context_length: 1048576,
         },
         { id: "kimi-k3", name: "Kimi K3", context_length: 1048576 },
-        {
-          id: "deepseek-v4-pro:0813",
-          name: "DeepSeek V4 Pro",
-          context_length: 1048576,
-        },
         {
           id: "deepseek-v4.1-flash",
           name: "DeepSeek V4.1 Flash",
@@ -3396,11 +3373,6 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
           name: "DeepSeek V4.1 Flash 1017",
           context_length: 1048576,
         },
-        {
-          id: "deepseek-ai/DeepSeek-V4-Pro-0813",
-          name: "DeepSeek V4 Pro 0813",
-          context_length: 1048576,
-        },
         { id: "moonshotai/Kimi-K3", name: "Kimi K3", context_length: 1048576 },
         { id: "zai-org/GLM-5.3", name: "GLM-5.3", context_length: 1048576 },
         {
@@ -3516,11 +3488,6 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
           context_length: 262144,
         },
         {
-          id: "deepseek-ai/DeepSeek-V4-Pro-0813",
-          name: "DeepSeek V4 Pro 0813",
-          context_length: 979000,
-        },
-        {
           id: "deepseek-ai/DeepSeek-V4.1-Flash",
           name: "DeepSeek V4.1 Flash",
           context_length: 1048000,
@@ -3615,9 +3582,11 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
       models: [
         { id: "glm-5.3", name: "GLM-5.3", context_length: 1048576 },
         { id: "kimi-k3", name: "Kimi K3", context_length: 1048576 },
+        // 2026-10-25 起 DeepSeek 一律用 Flash（Pro 贵且效果不如 Flash）；
+        // 平台模型表同日列有 V4.1 Flash 1017
         {
-          id: "deepseek-v4-pro-0813",
-          name: "DeepSeek V4 Pro 0813",
+          id: "deepseek-v4.1-flash-1017",
+          name: "DeepSeek V4.1 Flash 1017",
           context_length: 1048576,
         },
         {
@@ -3665,11 +3634,6 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
         {
           id: "moonshotai/Kimi-K3:baseten",
           name: "Kimi K3 (Baseten)",
-          context_length: 1048576,
-        },
-        {
-          id: "deepseek-ai/DeepSeek-V4-Pro-0813:baseten",
-          name: "DeepSeek V4 Pro 0813 (Baseten)",
           context_length: 1048576,
         },
         {
@@ -3900,11 +3864,6 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
       models: [
         { id: "glm-5.3", name: "GLM-5.3", context_length: 1048576 },
         { id: "kimi-k3", name: "Kimi K3", context_length: 1048576 },
-        {
-          id: "deepseek-v4-pro-0813",
-          name: "DeepSeek V4 Pro",
-          context_length: 1048576,
-        },
         {
           id: "deepseek-v4.1-flash",
           name: "DeepSeek V4.1 Flash",
@@ -4150,5 +4109,149 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
     isPartner: true,
     partnerPromotionKey: "alltokens_si",
     icon: "alltokens-si",
+  },
+  {
+    name: "OspreyAI",
+    websiteUrl: "https://open.ospreyai.cn",
+    apiKeyUrl: "https://open.ospreyai.cn",
+    settingsConfig: {
+      name: "ospreyai",
+      base_url: "https://open.ospreyai.cn",
+      api_key: "",
+      api_mode: "anthropic_messages",
+      models: [
+        {
+          id: "claude-opus-5-5",
+          name: "Claude Opus 5.5",
+          context_length: 1000000,
+        },
+        {
+          id: "claude-sonnet-5-5",
+          name: "Claude Sonnet 5.5",
+          context_length: 1000000,
+        },
+        {
+          id: "claude-fable-5-1",
+          name: "Claude Fable 5.1",
+          context_length: 1000000,
+        },
+      ],
+    },
+    category: "aggregator",
+    suggestedDefaults: {
+      model: { default: "claude-opus-5-5", provider: "ospreyai" },
+    },
+    isPartner: true,
+    partnerPromotionKey: "ospreyai",
+    icon: "ospreyai",
+  },
+  {
+    name: "TeamoRouter Claude",
+    websiteUrl: "https://teamorouter.cn",
+    apiKeyUrl:
+      "https://teamorouter.cn/?utm_source=cc_switch&utm_medium=referral&utm_campaign=ai_directory",
+    settingsConfig: {
+      name: "teamorouter_claude",
+      base_url: "https://api.teamorouter.cn",
+      api_key: "",
+      api_mode: "anthropic_messages",
+      models: [
+        {
+          id: "claude-opus-5-5",
+          name: "Claude Opus 5.5",
+          context_length: 1000000,
+        },
+        {
+          id: "claude-sonnet-5-5",
+          name: "Claude Sonnet 5.5",
+          context_length: 1000000,
+        },
+        {
+          id: "claude-fable-5-1",
+          name: "Claude Fable 5.1",
+          context_length: 1000000,
+        },
+      ],
+    },
+    category: "aggregator",
+    isPartner: true,
+    partnerPromotionKey: "teamorouter",
+    icon: "teamorouter",
+    suggestedDefaults: {
+      model: { default: "claude-opus-5-5", provider: "teamorouter_claude" },
+    },
+  },
+  {
+    name: "ClinePass",
+    websiteUrl: "https://docs.cline.bot/getting-started/clinepass",
+    apiKeyUrl: "https://app.cline.bot",
+    settingsConfig: {
+      name: "clinepass",
+      // 官方只有 OpenAI Chat 端点（docs.cline.bot/getting-started/clinepass），
+      // Bearer 鉴权。阵容取 2026-10-26 官方公开列表 api.cline.bot/api/v1/ai/
+      // cline/recommended-models 的 clinePass 段，窗口按 models.dev
+      base_url: "https://api.cline.bot/api/v1",
+      api_key: "",
+      api_mode: "chat_completions",
+      models: [
+        {
+          id: "cline-pass/kimi-k3.1-pro",
+          name: "Kimi K3.1 Pro",
+          context_length: 1048576,
+        },
+        { id: "cline-pass/glm-5.3", name: "GLM-5.3", context_length: 1000000 },
+        {
+          id: "cline-pass/glm-5.3-flash",
+          name: "GLM-5.3 Flash",
+          context_length: 1000000,
+        },
+        { id: "cline-pass/kimi-k3", name: "Kimi K3", context_length: 1048576 },
+        {
+          id: "cline-pass/deepseek-v4-pro",
+          name: "DeepSeek V4 Pro",
+          context_length: 1000000,
+        },
+        {
+          id: "cline-pass/deepseek-v4.1-flash",
+          name: "DeepSeek V4.1 Flash",
+          context_length: 1000000,
+        },
+        {
+          id: "cline-pass/qwen3.8-max",
+          name: "Qwen3.8 Max",
+          context_length: 1000000,
+        },
+        {
+          id: "cline-pass/qwen3.7-plus",
+          name: "Qwen3.7 Plus",
+          context_length: 1000000,
+        },
+        {
+          id: "cline-pass/minimax-m3",
+          name: "MiniMax M3",
+          context_length: 1048576,
+        },
+        {
+          id: "cline-pass/minimax-m3.1-flash",
+          name: "MiniMax M3.1 Flash",
+          context_length: 1000000,
+        },
+        {
+          id: "cline-pass/mimo-v2.6-pro",
+          name: "MiMo V2.6 Pro",
+          context_length: 1048576,
+        },
+        {
+          id: "cline-pass/mimo-v2.6-flash",
+          name: "MiMo V2.6 Flash",
+          context_length: 1048576,
+        },
+      ],
+    },
+    category: "third_party",
+    icon: "cline",
+    suggestedDefaults: {
+      model: { default: "cline-pass/kimi-k3.1-pro", provider: "clinepass" },
+    },
   },
 ];

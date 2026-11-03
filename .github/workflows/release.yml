@@ -99,9 +99,9 @@ jobs:
       matrix:
         include: >-
           ${{ fromJSON(
-            inputs.platform == 'macos' && '[{"os":"macos-14","arch":"universal"}]' ||
+            inputs.platform == 'macos' && '[{"os":"macos-15","arch":"universal"}]' ||
             inputs.platform == 'windows' && '[{"os":"windows-2022","arch":"x86_64"}]' ||
-            '[{"os":"windows-2022","arch":"x86_64"},{"os":"macos-14","arch":"universal"}]'
+            '[{"os":"windows-2022","arch":"x86_64"},{"os":"macos-15","arch":"universal"}]'
           ) }}
 
     steps:
