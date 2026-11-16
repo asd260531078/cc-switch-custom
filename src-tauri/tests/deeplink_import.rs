@@ -431,7 +431,8 @@ fn deeplink_codex_explicit_models_reach_the_live_catalog() {
     assert_eq!(
         config["model_catalog_json"].as_str(),
         Some(
-            home.join(".codex/cc-switch-model-catalog.json")
+            home.join(".codex")
+                .join("cc-switch-model-catalog.json")
                 .to_string_lossy()
                 .as_ref()
         )

@@ -8,7 +8,7 @@ import {
   fireEvent,
   within,
 } from "@testing-library/react";
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeAll, beforeEach, vi } from "vitest";
 import { http, HttpResponse } from "msw";
 import { providersApi } from "@/lib/api/providers";
 import {
@@ -228,6 +228,11 @@ const renderApp = (AppComponent: ComponentType) => {
 };
 
 describe("App integration with MSW", () => {
+  beforeAll(async () => {
+    // 这里覆盖编辑流程；先准备异步 mock，避免 CI 冷加载占用元素查询的等待时间。
+    await import("@/components/providers/EditProviderDialog");
+  });
+
   beforeEach(() => {
     resetProviderState();
     toastSuccessMock.mockReset();
@@ -440,6 +445,9 @@ describe("App integration with MSW", () => {
 
     // 没改过：照常离开，不问
     fireEvent.click(screen.getByText("edit"));
+    expect(
+      await screen.findByTestId("edit-provider-dialog"),
+    ).toBeInTheDocument();
     fireEvent.click(sidebarApp("Codex"));
     await waitFor(() =>
       expect(screen.getByTestId("provider-list").textContent).toContain(
@@ -451,7 +459,7 @@ describe("App integration with MSW", () => {
     // 改过：先问；继续编辑就留在原页
     // （ConfirmDialog 在这个文件里是 mock：只渲染消息和 confirm-delete / cancel-delete）
     fireEvent.click(screen.getByText("edit"));
-    fireEvent.input(screen.getByLabelText("edit-field"), {
+    fireEvent.input(await screen.findByLabelText("edit-field"), {
       target: { value: "draft" },
     });
     fireEvent.click(sidebarApp("Claude Code"));
