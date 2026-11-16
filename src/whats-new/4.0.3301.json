@@ -1,0 +1,33 @@
+{
+  "version": "4.0.3301",
+  "items": [
+    {
+      "type": "new",
+      "zh": "新增 Copilot CLI、WorkBuddy 管理与路由隐私过滤器",
+      "zh-TW": "新增 Copilot CLI、WorkBuddy 管理與路由隱私過濾器",
+      "en": "Manage Copilot CLI and WorkBuddy; optionally filter private data before routing",
+      "ja": "Copilot CLI・WorkBuddy の管理とルーティング時のプライバシーフィルターを追加"
+    },
+    {
+      "type": "improve",
+      "zh": "适配新版 Codex 会话分组，新增正文搜索与界面缩放",
+      "zh-TW": "適配新版 Codex 工作階段分組，新增內文搜尋與介面縮放",
+      "en": "Support new Codex session grouping, message search, and interface scaling",
+      "ja": "新しい Codex の会話グループに対応し、本文検索と画面拡大を追加"
+    },
+    {
+      "type": "fix",
+      "zh": "修复切回 Claude 官方、模型列表获取与云同步问题",
+      "zh-TW": "修正切回 Claude 官方、取得模型清單與雲端同步問題",
+      "en": "Fix switching back to Claude, model discovery, cloud sync, and failed Skill updates",
+      "ja": "Claude 公式への切り替え、モデル取得、クラウド同期、Skill 更新失敗を修正"
+    },
+    {
+      "type": "improve",
+      "zh": "保留 Desktop/Pi 仅导入、Codex 认证、Logo 与独立更新源",
+      "zh-TW": "保留 Desktop/Pi 僅匯入、Codex 認證、Logo 與獨立更新來源",
+      "en": "Keep Desktop/Pi import choices, Codex auth, website logos, and the custom update channel",
+      "ja": "Desktop/Pi のインポート選択、Codex 認証、ロゴと独自更新元を維持"
+    }
+  ]
+}

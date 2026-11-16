@@ -1204,10 +1204,10 @@ describe("PiProviderForm", () => {
     const submitted = onSubmit.mock.calls[0][0];
     const config = JSON.parse(submitted.settingsConfig);
     expect(config.models.map((model: { id: string }) => model.id)).toEqual([
-      "kimi-k2.7-code",
-      "kimi-k3",
       "kimi-k3.1-pro",
       "kimi-k3.1-pro-highspeed",
+      "kimi-k3",
+      "kimi-k2.7-code",
       "kimi-k2.7-code-highspeed",
       "kimi-k2.6",
     ]);
@@ -1217,10 +1217,10 @@ describe("PiProviderForm", () => {
         name: model.name,
       })),
     ).toEqual([
-      { id: "kimi-k2.7-code", name: "Kimi K2.7 Code" },
-      { id: "kimi-k3", name: "Kimi K3" },
       { id: "kimi-k3.1-pro", name: "Kimi K3.1 Pro" },
       { id: "kimi-k3.1-pro-highspeed", name: "Kimi K3.1 Pro HighSpeed" },
+      { id: "kimi-k3", name: "Kimi K3" },
+      { id: "kimi-k2.7-code", name: "Kimi K2.7 Code" },
       { id: "kimi-k2.7-code-highspeed", name: "Kimi K2.7 Code HighSpeed" },
       { id: "kimi-k2.6", name: "Kimi K2.6" },
     ]);
@@ -1873,6 +1873,12 @@ describe("PiProviderForm", () => {
     ) as HTMLTextAreaElement;
     expect(JSON.parse(configEditor.value).models[0].thinkingLevelMap).toEqual({
       off: null,
+      minimal: null,
+      low: "low",
+      medium: null,
+      high: "high",
+      xhigh: null,
+      max: "max",
     });
 
     await user.click(document.querySelector("#pi-provider-api-select")!);
@@ -1881,6 +1887,12 @@ describe("PiProviderForm", () => {
     );
     expect(JSON.parse(configEditor.value).models[0].thinkingLevelMap).toEqual({
       off: null,
+      minimal: null,
+      low: "low",
+      medium: null,
+      high: "high",
+      xhigh: null,
+      max: "max",
     });
 
     await user.click(document.querySelector("#pi-provider-api-select")!);
@@ -1891,6 +1903,12 @@ describe("PiProviderForm", () => {
     );
     expect(JSON.parse(configEditor.value).models[0].thinkingLevelMap).toEqual({
       off: null,
+      minimal: null,
+      low: "low",
+      medium: null,
+      high: "high",
+      xhigh: null,
+      max: "max",
     });
   });
 

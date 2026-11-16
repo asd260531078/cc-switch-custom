@@ -191,7 +191,7 @@ fn pi_url_to_import_preserves_encoding_membership_defaults_and_other_apps() {
                 "apiKey": request.api_key,
                 "baseUrl": "https://api.example.com/Case%2FPath/v1/",
                 "api": "openai-completions",
-                "models": [{"id": request.model}]
+                "models": [{"id": request.model, "name": request.model}]
             })
         );
         if enabled == Some(true) {

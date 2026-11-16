@@ -56,6 +56,8 @@ const catalogs: Array<{
       "Astron Coding Plan",
       "ClinePass",
       "OpenAI API",
+      "TokenPlus",
+      "Genesis",
     ],
   },
   {
@@ -93,6 +95,7 @@ const catalogs: Array<{
       "OspreyAI",
       "OpenAI API",
       "ClinePass",
+      "TokenPlus",
     ],
   },
   {
@@ -131,6 +134,8 @@ const catalogs: Array<{
       "OspreyAI",
       "OpenAI API",
       "ClinePass",
+      "Genesis",
+      "TokenPlus",
     ],
   },
   {
@@ -225,6 +230,7 @@ const catalogs: Array<{
       "OspreyAI",
       "TeamoRouter Claude",
       "ClinePass",
+      "TokenPlus",
     ],
   },
   {
@@ -262,6 +268,7 @@ const catalogs: Array<{
       "OspreyAI",
       "TeamoRouter Claude",
       "ClinePass",
+      "TokenPlus",
     ],
   },
   {
@@ -299,6 +306,7 @@ const catalogs: Array<{
       "TeamoRouter Claude",
       "OpenAI API",
       "ClinePass",
+      "TokenPlus",
     ],
   },
   {
@@ -335,11 +343,13 @@ const catalogs: Array<{
       "OspreyAI",
       "TeamoRouter Claude",
       "ClinePass",
+      "TokenPlus",
+      "Genesis",
     ],
   },
 ];
 
-describe("provider preset selection IDs through the v4.0.25 sync", () => {
+describe("provider preset selection IDs through the v4.0.33 sync", () => {
   it.each(catalogs)(
     "$app retains old selection IDs and appends official additions",
     ({ presets, oldCount, stableIds, appended }) => {

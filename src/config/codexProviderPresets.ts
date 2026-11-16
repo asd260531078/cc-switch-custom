@@ -85,7 +85,6 @@ export function generateThirdPartyConfig(
   return `model_provider = "custom"
 model = ${tomlString(modelName)}
 model_reasoning_effort = "high"
-disable_response_storage = true
 
 [model_providers.custom]
 name = ${tomlString(providerName)}
@@ -134,6 +133,81 @@ function modelCatalog(
         },
   );
 }
+
+// Model lists that several presets share, each named after the first preset
+// that uses it. Every call builds fresh objects, so presets never share state.
+const stepFunApiModels = (): CodexCatalogModel[] =>
+  modelCatalog([
+    {
+      model: "step-3.7-flash",
+      displayName: "Step 3.7 Flash",
+      contextWindow: 262144,
+      inputModalities: ["text", "image"],
+      reasoningLevels: ["low", "medium", "high"],
+      defaultReasoningLevel: "high",
+    },
+  ]);
+
+const stepFunModels = (): CodexCatalogModel[] =>
+  modelCatalog([
+    // 档位照抄官方两站模型页与 reasoning 指南（2026-08-15 盘点）：
+    // 3.7-flash 三档默认 medium、2603 两档；无后缀 3.5-flash 官方未暴露
+    // effort，不填。全系无关思考形态，none 一律不列。effort 下发由后端
+    // 按模型推断（2603=low_high 收敛、3.7=passthrough），预设不加
+    // codexChatReasoning——显式声明是 provider 级会丢 per-model 门控
+    {
+      model: "step-3.7-flash",
+      displayName: "Step 3.7 Flash",
+      contextWindow: 262144,
+      reasoningLevels: ["low", "medium", "high"],
+    },
+    {
+      model: "step-3.5-flash-2603",
+      displayName: "Step 3.5 Flash 2603",
+      contextWindow: 262144,
+      reasoningLevels: ["low", "high"],
+    },
+    {
+      model: "step-3.5-flash",
+      displayName: "Step 3.5 Flash",
+      contextWindow: 262144,
+    },
+  ]);
+
+const streamLakeModels = (): CodexCatalogModel[] =>
+  modelCatalog([
+    {
+      model: "kat-coder-pro-v2.5",
+      displayName: "KAT-Coder Pro V2.5",
+      contextWindow: 262144,
+      inputModalities: ["text"],
+      reasoningLevels: ["high"],
+    },
+  ]);
+
+const miniMaxModels = (): CodexCatalogModel[] =>
+  modelCatalog([
+    {
+      model: "MiniMax-M3.1-Flash",
+      displayName: "MiniMax-M3.1-Flash",
+      contextWindow: 1000000,
+      reasoningLevels: ["low", "medium", "high", "xhigh", "max"],
+      supportsParallelToolCalls: true,
+      inputModalities: ["text", "image"],
+      baseInstructions:
+        "You are Codex, a coding agent based on MiniMax-M3.1-Flash. You and the user share the same workspace and collaborate to achieve the user's goals.",
+    },
+    {
+      model: "MiniMax-M3",
+      displayName: "MiniMax-M3",
+      contextWindow: 1000000,
+      reasoningLevels: ["none", "high"],
+      supportsParallelToolCalls: true,
+      inputModalities: ["text", "image"],
+      baseInstructions:
+        "You are Codex, a coding agent based on MiniMax-M3. You and the user share the same workspace and collaborate to achieve the user's goals.",
+    },
+  ]);
 
 export const codexProviderPresets: CodexProviderPreset[] = [
   {
@@ -420,7 +494,6 @@ export const codexProviderPresets: CodexProviderPreset[] = [
 model = "gpt-6.1-sol"
 review_model = "gpt-6.1-sol"
 model_reasoning_effort = "high"
-disable_response_storage = true
 
 [model_providers.custom]
 name = "APINebula"
@@ -705,7 +778,6 @@ requires_openai_auth = true`,
 model = "gpt-6.1-sol"
 review_model = "gpt-6.1-sol"
 model_reasoning_effort = "high"
-disable_response_storage = true
 
 [model_providers.custom]
 name = "APIKEY.FUN"
@@ -724,8 +796,8 @@ requires_openai_auth = true`,
   },
   {
     name: "9527CODE",
-    websiteUrl: "https://9527.codes",
-    apiKeyUrl: "https://9527.codes/register?aff=e5zI",
+    websiteUrl: "https://9527.codes/register?channel=ccs",
+    apiKeyUrl: "https://9527.codes/register?channel=ccs",
     category: "aggregator",
     auth: generateThirdPartyAuth(""),
     config: generateThirdPartyConfig(
@@ -758,20 +830,17 @@ requires_openai_auth = true`,
   },
   {
     name: "TeamoRouter",
-    websiteUrl: "https://teamorouter.cn",
+    websiteUrl: "https://teamorouter.com",
     apiKeyUrl:
-      "https://teamorouter.cn/?utm_source=cc_switch&utm_medium=referral&utm_campaign=ai_directory",
+      "https://teamorouter.com/?utm_source=cc_switch&utm_medium=referral&utm_campaign=ai_directory",
     category: "aggregator",
     auth: generateThirdPartyAuth(""),
     config: generateThirdPartyConfig(
       "teamorouter",
-      "https://api.teamorouter.cn/v1",
+      "https://api.teamorouter.com/v1",
       "gpt-6.1-sol",
     ),
-    endpointCandidates: [
-      "https://api.teamorouter.cn/v1",
-      "https://api.teamorouter.com/v1",
-    ],
+    endpointCandidates: ["https://api.teamorouter.com/v1"],
     isPartner: true,
     partnerPromotionKey: "teamorouter",
     icon: "teamorouter",
@@ -1118,7 +1187,6 @@ requires_openai_auth = true`,
     ),
     endpointCandidates: ["https://www.ccsub.net/v1"],
     isPartner: true,
-    partnerPromotionKey: "ccsub",
     icon: "ccsub",
   },
   {
@@ -1256,7 +1324,6 @@ requires_openai_auth = true`,
 model = "gpt-6.1-sol"
 review_model = "gpt-6.1-sol"
 model_reasoning_effort = "high"
-disable_response_storage = true
 
 [model_providers.custom]
 name = "SudoCode"
@@ -1283,7 +1350,6 @@ requires_openai_auth = true`,
 model = "gpt-6.1-sol"
 review_model = "gpt-6.1-sol"
 model_reasoning_effort = "high"
-disable_response_storage = true
 model_verbosity = "high"
 
 [model_providers.custom]
@@ -1357,7 +1423,6 @@ requires_openai_auth = true`,
     auth: generateThirdPartyAuth(""),
     config: `model_provider = "custom"
 model = "zai-org/glm-5.3"
-disable_response_storage = true
 
 [model_providers.custom]
 name = "AtlasCloud"
@@ -1413,7 +1478,6 @@ requires_openai_auth = true`,
     config: `model_provider = "custom"
 model = "gpt-5.6-sol"
 model_reasoning_effort = "high"
-disable_response_storage = true
 
 [model_providers.custom]
 name = "Azure OpenAI"
@@ -2575,16 +2639,7 @@ requires_openai_auth = true`,
     // Step Plan 的 /step_plan/v1 仍单列 Chat，不与按量接口混用。
     endpointCandidates: ["https://api.stepfun.com/v1"],
     apiFormat: "openai_responses",
-    modelCatalog: modelCatalog([
-      {
-        model: "step-3.7-flash",
-        displayName: "Step 3.7 Flash",
-        contextWindow: 262144,
-        inputModalities: ["text", "image"],
-        reasoningLevels: ["low", "medium", "high"],
-        defaultReasoningLevel: "high",
-      },
-    ]),
+    modelCatalog: stepFunApiModels(),
     category: "cn_official",
     icon: "stepfun",
     iconColor: "#16D6D2",
@@ -2605,16 +2660,7 @@ requires_openai_auth = true`,
     // 国际站使用独立域名/Key；与 Step Plan 国际预设分别计费。
     endpointCandidates: ["https://api.stepfun.ai/v1"],
     apiFormat: "openai_responses",
-    modelCatalog: modelCatalog([
-      {
-        model: "step-3.7-flash",
-        displayName: "Step 3.7 Flash",
-        contextWindow: 262144,
-        inputModalities: ["text", "image"],
-        reasoningLevels: ["low", "medium", "high"],
-        defaultReasoningLevel: "high",
-      },
-    ]),
+    modelCatalog: stepFunApiModels(),
     category: "cn_official",
     icon: "stepfun",
     iconColor: "#16D6D2",
@@ -2634,30 +2680,7 @@ requires_openai_auth = true`,
     ),
     endpointCandidates: ["https://api.stepfun.com/step_plan/v1"],
     apiFormat: "openai_chat",
-    modelCatalog: modelCatalog([
-      // 档位照抄官方两站模型页与 reasoning 指南（2026-08-15 盘点）：
-      // 3.7-flash 三档默认 medium、2603 两档；无后缀 3.5-flash 官方未暴露
-      // effort，不填。全系无关思考形态，none 一律不列。effort 下发由后端
-      // 按模型推断（2603=low_high 收敛、3.7=passthrough），预设不加
-      // codexChatReasoning——显式声明是 provider 级会丢 per-model 门控
-      {
-        model: "step-3.7-flash",
-        displayName: "Step 3.7 Flash",
-        contextWindow: 262144,
-        reasoningLevels: ["low", "medium", "high"],
-      },
-      {
-        model: "step-3.5-flash-2603",
-        displayName: "Step 3.5 Flash 2603",
-        contextWindow: 262144,
-        reasoningLevels: ["low", "high"],
-      },
-      {
-        model: "step-3.5-flash",
-        displayName: "Step 3.5 Flash",
-        contextWindow: 262144,
-      },
-    ]),
+    modelCatalog: stepFunModels(),
     category: "cn_official",
     icon: "stepfun",
     iconColor: "#16D6D2",
@@ -2677,30 +2700,7 @@ requires_openai_auth = true`,
     ),
     endpointCandidates: ["https://api.stepfun.ai/step_plan/v1"],
     apiFormat: "openai_chat",
-    modelCatalog: modelCatalog([
-      // 档位照抄官方两站模型页与 reasoning 指南（2026-08-15 盘点）：
-      // 3.7-flash 三档默认 medium、2603 两档；无后缀 3.5-flash 官方未暴露
-      // effort，不填。全系无关思考形态，none 一律不列。effort 下发由后端
-      // 按模型推断（2603=low_high 收敛、3.7=passthrough），预设不加
-      // codexChatReasoning——显式声明是 provider 级会丢 per-model 门控
-      {
-        model: "step-3.7-flash",
-        displayName: "Step 3.7 Flash",
-        contextWindow: 262144,
-        reasoningLevels: ["low", "medium", "high"],
-      },
-      {
-        model: "step-3.5-flash-2603",
-        displayName: "Step 3.5 Flash 2603",
-        contextWindow: 262144,
-        reasoningLevels: ["low", "high"],
-      },
-      {
-        model: "step-3.5-flash",
-        displayName: "Step 3.5 Flash",
-        contextWindow: 262144,
-      },
-    ]),
+    modelCatalog: stepFunModels(),
     category: "cn_official",
     icon: "stepfun",
     iconColor: "#16D6D2",
@@ -2793,28 +2793,7 @@ requires_openai_auth = true`,
     // 档位照抄官方 catalog：none/high（M3 的 effort 是思考开关，minimal/low/medium
     // 端点接受但与 high 行为完全等价，不给假差异档）。与模板默认一致故 Codex 侧
     // 零行为变化，显式声明只为表单可见（"未设置"误导性更大，Jason 2026-08-15 拍板）
-    modelCatalog: modelCatalog([
-      {
-        model: "MiniMax-M3.1-Flash",
-        displayName: "MiniMax-M3.1-Flash",
-        contextWindow: 1000000,
-        reasoningLevels: ["low", "medium", "high", "xhigh", "max"],
-        supportsParallelToolCalls: true,
-        inputModalities: ["text", "image"],
-        baseInstructions:
-          "You are Codex, a coding agent based on MiniMax-M3.1-Flash. You and the user share the same workspace and collaborate to achieve the user's goals.",
-      },
-      {
-        model: "MiniMax-M3",
-        displayName: "MiniMax-M3",
-        contextWindow: 1000000,
-        reasoningLevels: ["none", "high"],
-        supportsParallelToolCalls: true,
-        inputModalities: ["text", "image"],
-        baseInstructions:
-          "You are Codex, a coding agent based on MiniMax-M3. You and the user share the same workspace and collaborate to achieve the user's goals.",
-      },
-    ]),
+    modelCatalog: miniMaxModels(),
     category: "cn_official",
     theme: {
       backgroundColor: "#f64551",
@@ -2843,28 +2822,7 @@ requires_openai_auth = true`,
     // 档位照抄官方 catalog：none/high（M3 的 effort 是思考开关，minimal/low/medium
     // 端点接受但与 high 行为完全等价，不给假差异档）。与模板默认一致故 Codex 侧
     // 零行为变化，显式声明只为表单可见（"未设置"误导性更大，Jason 2026-08-15 拍板）
-    modelCatalog: modelCatalog([
-      {
-        model: "MiniMax-M3.1-Flash",
-        displayName: "MiniMax-M3.1-Flash",
-        contextWindow: 1000000,
-        reasoningLevels: ["low", "medium", "high", "xhigh", "max"],
-        supportsParallelToolCalls: true,
-        inputModalities: ["text", "image"],
-        baseInstructions:
-          "You are Codex, a coding agent based on MiniMax-M3.1-Flash. You and the user share the same workspace and collaborate to achieve the user's goals.",
-      },
-      {
-        model: "MiniMax-M3",
-        displayName: "MiniMax-M3",
-        contextWindow: 1000000,
-        reasoningLevels: ["none", "high"],
-        supportsParallelToolCalls: true,
-        inputModalities: ["text", "image"],
-        baseInstructions:
-          "You are Codex, a coding agent based on MiniMax-M3. You and the user share the same workspace and collaborate to achieve the user's goals.",
-      },
-    ]),
+    modelCatalog: miniMaxModels(),
     category: "cn_official",
     theme: {
       backgroundColor: "#f64551",
@@ -3061,14 +3019,15 @@ requires_openai_auth = true`,
     websiteUrl: "https://x.ai/api",
     apiKeyUrl: "https://console.x.ai",
     auth: generateThirdPartyAuth(""),
-    config: generateThirdPartyConfig("xai", "https://api.x.ai/v1", "grok-4.5"),
+    config: generateThirdPartyConfig("xai", "https://api.x.ai/v1", "grok-4.7"),
     endpointCandidates: ["https://api.x.ai/v1"],
     // xAI 官方以 /v1/responses 为一等端点（docs.x.ai api-reference）：Codex 硬依赖的
     // store:false / include=["reasoning.encrypted_content"] / reasoning effort 均支持，
     // 原生 Responses，无需路由接管转换
     apiFormat: "openai_responses",
     modelCatalog: modelCatalog([
-      // https://docs.x.ai/developers/models/grok-4.7 (2026-09-23)
+      // https://docs.x.ai/developers/models/grok-4.7（2026-09-23 收录；
+      // 2026-11-03 复核：官方默认 effort=high，子集最高档为 xhigh → 显式声明）
       {
         model: "grok-4.7",
         displayName: "Grok 4.7",
@@ -3076,6 +3035,7 @@ requires_openai_auth = true`,
         supportsParallelToolCalls: true,
         inputModalities: ["text", "image"],
         reasoningLevels: ["low", "medium", "high", "xhigh"],
+        defaultReasoningLevel: "high",
       },
       {
         model: "grok-4.5",
@@ -3104,13 +3064,23 @@ requires_openai_auth = true`,
     // api.x.ai；这里的 base_url / 空 auth 只是配置快照，转发时不生效。
     // requires_openai_auth 必须是 false：keyless + true 会被后端安全闸
     // 拒绝切换（后端写入层对存量卡也会强制归一为 false）。
-    config: generateThirdPartyConfig("xai", "https://api.x.ai/v1", "grok-4.5", {
+    config: generateThirdPartyConfig("xai", "https://api.x.ai/v1", "grok-4.7", {
       requiresOpenAiAuth: false,
     }),
     apiFormat: "openai_responses",
     providerType: "xai_oauth",
     requiresOAuth: true,
     modelCatalog: modelCatalog([
+      // 同 API-key 条目（docs.x.ai 2026-11-03 复核：官方默认 effort=high）
+      {
+        model: "grok-4.7",
+        displayName: "Grok 4.7",
+        contextWindow: 500000,
+        supportsParallelToolCalls: true,
+        inputModalities: ["text", "image"],
+        reasoningLevels: ["low", "medium", "high", "xhigh"],
+        defaultReasoningLevel: "high",
+      },
       {
         model: "grok-4.5",
         displayName: "Grok 4.5",
@@ -3300,7 +3270,6 @@ requires_openai_auth = true`,
     config: `model_provider = "custom"
 model = "gpt-6.1-sol"
 model_reasoning_effort = "high"
-disable_response_storage = true
 
 [model_providers.custom]
 name = "E-FlowCode"
@@ -3324,7 +3293,6 @@ model_auto_compact_token_limit = 9000000`,
     config: `model_provider = "custom"
 model = "gpt-6.1-sol"
 model_reasoning_effort = "medium"
-disable_response_storage = true
 
 [model_providers.custom]
 name = "PIPELLM"
@@ -3694,7 +3662,7 @@ base_url = "https://cc-api.pipellm.ai/v1"`,
   {
     name: "OpenModel",
     websiteUrl: "https://www.openmodel.ai",
-    apiKeyUrl: "https://www.openmodel.ai/campaigns/client-benefits",
+    apiKeyUrl: "https://www.openmodel.ai?ref=cc-switch",
     category: "aggregator",
     auth: generateThirdPartyAuth(""),
     config: generateThirdPartyConfig(
@@ -3851,15 +3819,7 @@ base_url = "https://cc-api.pipellm.ai/v1"`,
     // kat-coder-pro-v2.5（公共推理点，免建 ep-）；订阅 Coding Plan 改用 /api/gateway/coding/v1
     apiFormat: "openai_responses",
     // 官方只写支持 reasoning.effort、未列档位：同 LongCat 只给 high，不提供 none 假开关
-    modelCatalog: modelCatalog([
-      {
-        model: "kat-coder-pro-v2.5",
-        displayName: "KAT-Coder Pro V2.5",
-        contextWindow: 262144,
-        inputModalities: ["text"],
-        reasoningLevels: ["high"],
-      },
-    ]),
+    modelCatalog: streamLakeModels(),
     category: "cn_official",
     icon: "streamlake",
   },
@@ -3880,15 +3840,7 @@ base_url = "https://cc-api.pipellm.ai/v1"`,
     ],
     // 国际站接入形态同国内版
     apiFormat: "openai_responses",
-    modelCatalog: modelCatalog([
-      {
-        model: "kat-coder-pro-v2.5",
-        displayName: "KAT-Coder Pro V2.5",
-        contextWindow: 262144,
-        inputModalities: ["text"],
-        reasoningLevels: ["high"],
-      },
-    ]),
+    modelCatalog: streamLakeModels(),
     category: "cn_official",
     icon: "streamlake",
   },
@@ -4750,7 +4702,8 @@ base_url = "https://cc-api.pipellm.ai/v1"`,
   {
     name: "Mistral AI",
     websiteUrl: "https://mistral.ai",
-    apiKeyUrl: "https://console.mistral.ai/api-keys",
+    // Vibe 订阅额度与 API 共用，Key 在 Code > Vibe CLI 页创建（同 Claude 预设）
+    apiKeyUrl: "https://chat.mistral.ai/code/extensions",
     auth: generateThirdPartyAuth(""),
     // 官方 OpenAPI（docs.mistral.ai/openapi.yaml，2026-10-14 核对）只列
     // /v1/chat/completions，Bearer 鉴权；官方给 Codex 的只有 MCP 接法，没有模型
@@ -4758,7 +4711,7 @@ base_url = "https://cc-api.pipellm.ai/v1"`,
     config: generateThirdPartyConfig(
       "mistral",
       "https://api.mistral.ai/v1",
-      "mistral-medium-3-5",
+      "mistral-large-4",
     ),
     endpointCandidates: ["https://api.mistral.ai/v1"],
     // /v1/responses 无 Key 实测 401（网关配了路由），但 OpenAPI、llms-full.txt
@@ -4766,16 +4719,19 @@ base_url = "https://cc-api.pipellm.ai/v1"`,
     // 由转换层转成 function）。Chat 请求 schema 不收额外字段，转换层加的
     // stream_options 与透传的 user / logit_bias / seed 会不会被拒，未经真 Key 实测
     apiFormat: "openai_chat",
-    // 模型取官方模型表（docs.mistral.ai/models.md 同日）的固定版本 ID，均为 GA，
-    // 窗口官方写 256k、收文本与图片。两款都支持 reasoning_effort（官方只写
-    // none / high），但开推理后流式 content 是 thinking/text 分块数组，转换层
-    // 暂不解析，第一版不声明 codexChatReasoning、不下发推理参数，也不填档位。
-    // 首行 = 默认模型，须与 config 的 model 一致
+    // 模型取官方模型表（docs.mistral.ai/models.md，2026-11-06 核对）的 GA 型号：
+    // Medium 3.5 已于 10-31 弃用，主力改 Mistral Large 4（窗口官方写 1M，按
+    // 1000000 计），Small 4 窗口 256k，均收文本与图片。Large 4 档位只收
+    // low / medium / high（不收 none），Small 4 收 none / high；推理时流式
+    // content 是 thinking/text 分块数组，转换层暂不解析，第一版不声明
+    // codexChatReasoning、不下发推理参数，也不填档位（Large 4 不发档位时是否
+    // 仍推理官方未写）。首行 = 默认模型，须与 config 的 model 一致。以上风险
+    // 未经真 Key 冒烟，2026-11-06 起照常展示（不再隐藏）
     modelCatalog: modelCatalog([
       {
-        model: "mistral-medium-3-5",
-        displayName: "Mistral Medium 3.5",
-        contextWindow: 256000,
+        model: "mistral-large-4",
+        displayName: "Mistral Large 4",
+        contextWindow: 1000000,
         inputModalities: ["text", "image"],
       },
       {
@@ -4787,9 +4743,6 @@ base_url = "https://cc-api.pipellm.ai/v1"`,
     ]),
     category: "cn_official",
     icon: "mistral",
-    // 先隐藏：上面的转换层风险（stream_options / 额外字段可能 422、推理分块
-    // 数组）真 Key 冒烟通过前不在列表里展示
-    hidden: true,
   },
   {
     name: "Cloudflare AI Gateway",
@@ -5222,5 +5175,59 @@ base_url = "https://cc-api.pipellm.ai/v1"`,
     },
     category: "third_party",
     icon: "cline",
+  },
+  {
+    name: "Genesis",
+    websiteUrl: "https://genesis.moi.matrixorigin.cn/taas/",
+    apiKeyUrl: "https://uc.moi.matrixorigin.cn/account/credentials?app=genesis",
+    category: "aggregator",
+    // 矩阵起源 TaaS 原生提供 /v1/responses（实测 kimi-k3 返回 200），直连不经
+    // 转换。起步模型 kimi-k3，「获取模型」按账号拉取对话模型（#9269）
+    auth: generateThirdPartyAuth(""),
+    config: generateThirdPartyConfig(
+      "genesis",
+      "https://token.moi.matrixorigin.cn/v1",
+      "kimi-k3",
+    ),
+    apiFormat: "openai_responses",
+    modelCatalog: modelCatalog(["kimi-k3"]),
+    endpointCandidates: ["https://token.moi.matrixorigin.cn/v1"],
+    icon: "genesis",
+  },
+  {
+    name: "TokenPlus",
+    websiteUrl: "https://www.tokenplus.cn/",
+    apiKeyUrl: "https://www.tokenplus.cn/workspace",
+    category: "aggregator",
+    partnerPromotionKey: "tokenplus",
+    icon: "tokenplus",
+    auth: generateThirdPartyAuth(""),
+    config: `model_provider = "custom"
+model = "deepseek/deepseek-v4.1-flash-1017"
+
+[model_providers.custom]
+name = "tokenplus"
+base_url = "https://api.tokenplus.cn/v1"
+wire_api = "responses"
+requires_openai_auth = true`,
+    apiFormat: "openai_chat",
+    modelCatalog: [
+      {
+        model: "deepseek/deepseek-v4.1-flash-1017",
+        displayName: "DeepSeek V4.1 Flash 1017",
+      },
+      {
+        model: "z-ai/glm-5.3-flash",
+        displayName: "GLM 5.3 Flash",
+      },
+      {
+        model: "moonshot-ai/kimi-k3.1-pro",
+        displayName: "Kimi K3.1 Pro",
+      },
+      {
+        model: "minimax/m3.1-flash",
+        displayName: "MiniMax M3.1 Flash",
+      },
+    ],
   },
 ];

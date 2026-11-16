@@ -13,11 +13,16 @@ export interface DeepLinkImportRequest {
     | "codex"
     | "gemini"
     | "agy"
+    | "copilot"
     | "grokbuild"
     | "opencode"
     | "openclaw"
     | "hermes"
-    | "pi";
+    | "pi"
+    | "mcode"
+    | "kimi"
+    | "dsh"
+    | "omp";
   name?: string;
   enabled?: boolean;
 

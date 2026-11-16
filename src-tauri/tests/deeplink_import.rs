@@ -10,7 +10,7 @@ use cc_switch_lib::{
 use serde_json::{json, Value};
 use url::Url;
 
-#[path = "support.rs"]
+#[path = "support/mod.rs"]
 mod support;
 use support::{ensure_test_home, reset_test_fs, test_mutex};
 
@@ -430,7 +430,11 @@ fn deeplink_codex_explicit_models_reach_the_live_catalog() {
     assert_eq!(config["model"].as_str(), Some("gpt-6-sol"));
     assert_eq!(
         config["model_catalog_json"].as_str(),
-        Some("cc-switch-model-catalog.json")
+        Some(
+            home.join(".codex/cc-switch-model-catalog.json")
+                .to_string_lossy()
+                .as_ref()
+        )
     );
 
     let catalog: Value = serde_json::from_slice(
@@ -800,7 +804,7 @@ fn deeplink_desktop_non_claude_tiers_keep_each_official_proxy_role() {
         &[
             ("endpoint", "https://desktop-proxy.example.com/v1"),
             ("apiKey", "sk-desktop-proxy"),
-            ("model", "must-not-add-a-fourth-route"),
+            ("model", "fallback-upstream-model"),
             ("sonnetModel", "shared-upstream-model[1m]"),
             ("opusModel", "shared-upstream-model"),
             ("haikuModel", "shared-upstream-model"),
@@ -821,27 +825,26 @@ fn deeplink_desktop_non_claude_tiers_keep_each_official_proxy_role() {
         .expect("proxy routes object");
 
     let defaults = get_claude_desktop_default_routes();
-    let requested_roles = [
-        "ANTHROPIC_DEFAULT_SONNET_MODEL",
-        "ANTHROPIC_DEFAULT_OPUS_MODEL",
-        "ANTHROPIC_DEFAULT_HAIKU_MODEL",
-    ];
-    let expected_route_ids = defaults
-        .iter()
-        .filter(|route| requested_roles.contains(&route.env_key))
-        .map(|route| route.route_id)
-        .collect::<Vec<_>>();
-    assert_eq!(expected_route_ids.len(), 3, "official role definitions");
     assert_eq!(
         routes.len(),
-        expected_route_ids.len(),
-        "the generic model fallback must not add a route when tier fields exist"
+        defaults.len(),
+        "all official roles are mapped"
     );
-    for route_id in expected_route_ids {
+    for spec in &defaults {
         let route = routes
-            .get(route_id)
-            .unwrap_or_else(|| panic!("missing official Desktop route {route_id}"));
-        assert_eq!(route["model"], json!("shared-upstream-model"));
+            .get(spec.route_id)
+            .unwrap_or_else(|| panic!("missing official Desktop route {}", spec.route_id));
+        let expected = if matches!(
+            spec.env_key,
+            "ANTHROPIC_DEFAULT_SONNET_MODEL"
+                | "ANTHROPIC_DEFAULT_OPUS_MODEL"
+                | "ANTHROPIC_DEFAULT_HAIKU_MODEL"
+        ) {
+            "shared-upstream-model"
+        } else {
+            "fallback-upstream-model"
+        };
+        assert_eq!(route["model"], json!(expected));
     }
 
     let sonnet_route = defaults
@@ -856,7 +859,7 @@ fn deeplink_desktop_non_claude_tiers_keep_each_official_proxy_role() {
 }
 
 #[test]
-fn deeplink_desktop_single_non_claude_model_falls_back_to_official_sonnet_only() {
+fn deeplink_desktop_single_non_claude_model_fills_all_official_roles() {
     let _guard = test_mutex().lock().expect("acquire test mutex");
     reset_test_fs();
     let home = ensure_test_home();
@@ -886,15 +889,14 @@ fn deeplink_desktop_single_non_claude_model_falls_back_to_official_sonnet_only()
     let routes = meta["claudeDesktopModelRoutes"]
         .as_object()
         .expect("single fallback route object");
-    let sonnet_route = get_claude_desktop_default_routes()
-        .into_iter()
-        .find(|route| route.env_key == "ANTHROPIC_DEFAULT_SONNET_MODEL")
-        .expect("official Sonnet route");
-    assert_eq!(routes.len(), 1);
-    assert_eq!(
-        routes[sonnet_route.route_id]["model"],
-        json!("single-upstream-model")
-    );
+    let defaults = get_claude_desktop_default_routes();
+    assert_eq!(routes.len(), defaults.len());
+    for spec in defaults {
+        assert_eq!(
+            routes[spec.route_id]["model"],
+            json!("single-upstream-model")
+        );
+    }
 }
 
 #[test]
@@ -1140,7 +1142,10 @@ fn deeplink_desktop_enabled_import_switches_and_writes_isolated_profile() {
         .as_str()
         .unwrap()
         .ends_with("/claude-desktop"));
-    assert_eq!(profile["inferenceModels"].as_array().unwrap().len(), 3);
+    assert_eq!(
+        profile["inferenceModels"].as_array().unwrap().len(),
+        get_claude_desktop_default_routes().len()
+    );
     assert_eq!(
         db.get_current_provider(DESKTOP_APP).unwrap(),
         Some(provider_id)

@@ -5,11 +5,23 @@
 - 本项目仓库：[asd260531078/cc-switch-custom](https://github.com/asd260531078/cc-switch-custom)。`origin` 用于本项目上传；官方仓库为 `farion1231/cc-switch`，同步时按官方标签抓取并核实，不将其作为推送目标。
 - 仓库初始化时仅有 Apache 2.0 许可证，其[原始记录](https://github.com/asd260531078/cc-switch-custom/blob/186fdb999d30a77aa95106bd05f7e5758004299c/LICENSE)保留在 Git 历史中；合入官方源码后，根目录 `LICENSE` 沿用官方 MIT 及原版权声明。
 - 上游唯一基线：[farion1231/cc-switch](https://github.com/farion1231/cc-switch)。本地起点为官方 `v3.20.2` / `f3b18df12007d0fd79fd8ad8d310880664015197`，分支 `codex/fix-claude-desktop-deeplink`。
-- 当前代码合入官方正式版 `v4.0.25` / `a3eafa408ae679db2e3401fca767ed2b89d9a2b2`，定制源码版本为 `4.0.2501`。[当前公开的定制安装包](https://github.com/asd260531078/cc-switch-custom/releases/latest)
+- 当前代码合入官方正式版 `v4.0.33` / `86e23b6331b9ce2cee314d1ebb5b186da0de645a`，定制源码版本为 `4.0.3301`；本次源码同步尚未发布。[当前公开的定制安装包](https://github.com/asd260531078/cc-switch-custom/releases/latest)
 - 官方优先、定制最小化：保留目录、接口、配置与业务行为；优先复用官方能力，不做无关重构、格式化或依赖升级。按功能维护可独立撤销的差异。
 - 每次修复或同步前重新检查最新稳定版、相关提交和 PR 状态，区分已发布、已合并、未合并。先验证需求、配置和数据兼容，再让官方接管；部分覆盖时只保留未覆盖部分。不能因名称相同或发生冲突就删掉必要行为。
 - 冲突逐项按功能解决，不整文件覆盖。涉及实际用户数据时先备份并明确迁移、回滚。同步后更新本表、删除失效兼容代码，再执行对应回归；不保证未经验证的未来版本兼容。
 - 历史版本的上传与构建发布授权只适用于对应发布任务；本次官方同步不自动授权推送、发布、安装或改动真实用户配置。
+
+## UPSTREAM-4.0.33：新客户端、隐私过滤与会话兼容同步
+
+从 v4.0.25 合入 v4.0.26–v4.0.33 的 237 个官方提交，四处应用版本统一为 `4.0.3301`。新增 Copilot CLI、WorkBuddy、缺省关闭的路由隐私过滤器，采用 Codex 新会话分组、正文搜索、界面密度/缩放、多语言、套餐额度及同步和路由修复。[本次更新说明](release-notes/v4.0.3301-zh.md)
+
+保留 Desktop/Pi 仅导入与显式启用、Pi UUID/原始模型、Codex 深链认证与模型目录、网站 Logo、任意脚本显式启用和独立更新签名。Desktop 映射采用官方完整档位；补齐主模型与各档同时存在时的直连模型，保留 `[1m]` 转换，删除被官方映射构建器覆盖的旧重复档位辅助函数。Codex 模型目录文件路径采用官方绝对路径行为。
+
+九个既有预设目录的 1,049 个运行时选择 ID 全部保留，10 个新官方条目追加，289 个既有源码条目采用官方更新。所有同名官方预设的运行时内容与 v4.0.33 一致；定制 API 模板、Token-AI/MX-AI 优先排序与原有可见性规则保留。新增语言补齐定制导入与 Logo 文案，移除关于页推广文案和 README 赞助区。
+
+数据库 schema 从 24 升至 26，新增 Copilot CLI、WorkBuddy 的 MCP/Skills 开关，旧记录缺省关闭；沿用官方幂等补列。价格种子补缺不覆盖自定义价格；Hydrogen Orchestrator 费用采用官方基础模型回退并保留精确自定义价。真实升级会涉及状态迁移与历史费用补算，安装/回退须备份并按本版说明恢复对应数据库、账号与客户端配置/会话，不能仅换旧包。
+
+源码仅在本地同步；不包含正式标签后的 main 提交。回退标签 `backup/before-upstream-v4.0.33-20261116` 保留同步前 `5e4931f1`。本地验收与尚未验证的事项见本版更新说明。
 
 ## UPSTREAM-4.0.25 多账号、MCP 连通性与路由安全同步
 
@@ -135,7 +147,7 @@ Codex 供应商深链额外支持逗号分隔的 `models` 参数，并可从内�
 
 协议不增加参数、数据库不改表、不迁移：配置仍为官方 `settingsConfig.env` 与 `meta.claudeDesktopMode/claudeDesktopModelRoutes`。`config=` 使用 Base64 JSON/TOML 的 `env` 对象，不是完整 Desktop profile 或任意供应商导出格式；保留自定义 env。`ANTHROPIC_API_KEY` 可作为未提供 token 时的后备，最终转换为 Desktop 所需的 `ANTHROPIC_AUTH_TOKEN`。显式 URL 值优先，空值沿用现有合并规则。
 
-模型沿用官方规则：配置三档时按各档生成；只有各档均为空才用 `model` 生成 Sonnet 兜底。安全 Claude 模型走直连，其他模型走本地路由。路由模式运行时仍需官方本地路由服务；“切换供应商”不代表已验证上游可用或自动启动服务。`configUrl` 继续保留官方的“不支持远程配置”错误。
+模型沿用 v4.0.33 官方规则：安全 Claude 模型走直连，主模型与各档模型都保留；其他模型或接口格式生成完整官方映射档位，显式的各档参数覆盖相应档位，缺少的档位回退到主模型或首个已提供的档位。`[1m]` 后缀转换为元数据，重复上游模型仍保留独立路由档位。显式启用映射卡进入本地路由；使用期间需保持 CC Switch 运行，不代表已经验证上游可用。`configUrl` 继续保留官方的“不支持远程配置”错误。
 
 Desktop 弹窗的“只导入”总是提交 `enabled=false`，即使链接写了 `enabled=true`；“导入并立即切换”提交 `enabled=true`。其他应用的导入语义保持官方行为。后端调用也可显式传入 `enabled`；Desktop 缺省为只导入。
 
@@ -181,7 +193,7 @@ Claude Code、Claude Desktop、Codex、Grok Build、OpenCode、OpenClaw、Hermes
 
 `.github/workflows/ci.yml` 对 main 推送和 PR 使用相同的文件范围筛选：前端源码、测试和依赖变动执行前端检查；`src-tauri/**`、Rust 工具链及 Cargo 配置变动执行 Linux、Windows、macOS 后端检查和 Windows/WSL2 原子写入契约。main 推送比较推送前后的提交，覆盖一次推送中的全部提交。修改 CI 工作流本身执行全部检查；纯文档及其他工作流变动仅执行文件范围检测。需要完整验证时，在 Actions 的 CI 页面使用 Run workflow。
 
-WSL2 完整套件曾连续 10 次运行到 90 分钟上限，取消每日调度，保留 `.github/workflows/wsl2-nightly.yml` 的历史路径，显示名改为 `WSL2 Full Suite (Manual)`，仅供手动诊断；同一分支的新运行会取消旧运行。此项只消除自动重复消耗，没有修复完整套件超时。前端检查上限 15 分钟，常规后端检查上限 45 分钟；正式 Windows/macOS 发布、签名和更新元数据流程保持原有行为。
+WSL2 完整套件曾连续 10 次运行到 90 分钟上限，取消每日调度，保留 `.github/workflows/wsl2-nightly.yml` 的历史路径，显示名改为 `WSL2 Full Suite (Manual)`，仅供手动诊断；同一分支的新运行会取消旧运行。此项只消除自动重复消耗，没有修复完整套件超时。前端检查及官方新增的四个测试分片均设 15 分钟上限，常规后端检查上限 45 分钟，CI gate 汇总成功/跳过结果；正式 Windows/macOS 发布、签名和更新元数据流程保持原有行为。
 
 以后同步官方工作流时保留以上触发策略；只有完整 WSL2 套件恢复稳定、且维护者决定恢复定时检查时再增加调度。验证使用工作流语法检查及文件范围样例，无需为触发条件修改重新构建应用；GitHub 实际执行仍须在推送后核验。
 
