@@ -1,0 +1,33 @@
+{
+  "version": "4.0.3401",
+  "items": [
+    {
+      "type": "new",
+      "zh": "技能仓库新增 GitLab、Gitea 和 Forgejo 支持",
+      "zh-TW": "技能儲存庫新增 GitLab、Gitea 和 Forgejo 支援",
+      "en": "Add GitLab, Gitea, and Forgejo support for skill repositories",
+      "ja": "スキルリポジトリが GitLab・Gitea・Forgejo に対応"
+    },
+    {
+      "type": "improve",
+      "zh": "发现新版后可立即自动下载，并可删除 Antigravity CLI 会话",
+      "zh-TW": "偵測到新版後可立即自動下載，並可刪除 Antigravity CLI 工作階段",
+      "en": "Download updates as soon as they are found and delete Antigravity CLI sessions",
+      "ja": "更新をすぐに自動ダウンロードし、Antigravity CLI の会話を削除可能に"
+    },
+    {
+      "type": "fix",
+      "zh": "修复 Gemini 模型列表、Copilot 图片输入和 S3 同步",
+      "zh-TW": "修正 Gemini 模型清單、Copilot 圖片輸入和 S3 同步",
+      "en": "Fix Gemini model discovery, Copilot image input, and S3 sync",
+      "ja": "Gemini のモデル取得、Copilot の画像入力、S3 同期を修正"
+    },
+    {
+      "type": "improve",
+      "zh": "数据库升级到 27，回退旧版前须恢复升级前备份",
+      "zh-TW": "資料庫升級至 27，回退舊版前須還原升級前備份",
+      "en": "Database schema upgrades to 27. Restore a pre-upgrade backup before downgrading.",
+      "ja": "データベースがスキーマ 27 に更新。旧版に戻す前にバックアップを復元"
+    }
+  ]
+}

@@ -12,10 +12,6 @@ concurrency:
   group: ci-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  # Keep debug line numbers while reducing test link and cache sizes.
-  CARGO_PROFILE_DEV_DEBUG: line-tables-only
-
 jobs:
   changes:
     name: Detect changed areas

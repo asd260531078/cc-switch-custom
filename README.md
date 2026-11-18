@@ -28,7 +28,7 @@ English | [简体中文](README_ZH.md) | [繁體中文](README_ZH-TW.md) | [日�
 
 </div>
 
-The current custom source version is `4.0.3301`, based on the official `v4.0.33` stable release. It retains Claude Desktop/Pi imports, Codex deep-link authentication, website logos, and this repository’s update channel. Installers are available from [this repository’s Releases](https://github.com/asd260531078/cc-switch-custom/releases/latest); this source sync has not been released. See the [custom release notes](docs/release-notes/v4.0.3301-zh.md) for the source changes and upgrade guidance. The Homebrew and Linux instructions below refer to the upstream distribution.
+The current custom source version is `4.0.3401`, based on the official `v4.0.34` stable release. It retains Claude Desktop/Pi imports, Codex deep-link authentication, website logos, and this repository’s update channel. See [custom release notes](docs/release-notes/v4.0.3401-zh.md) for changes and database upgrade guidance. Windows x64 and macOS Universal installers are listed under [this repository’s Releases](https://github.com/asd260531078/cc-switch-custom/releases/latest). The Homebrew and Linux instructions below refer to the upstream distribution.
 
 ## Why CC Switch?
 

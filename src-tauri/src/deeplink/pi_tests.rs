@@ -1,7 +1,7 @@
-use super::TestHomeGuard;
 use crate::deeplink::{import_provider_from_deeplink, parse_deeplink_url, DeepLinkImportRequest};
 use crate::mode::current::{provider_for, Purpose};
 use crate::pi_config::{self, test_support::TestAgentDir};
+use crate::test_support::TempUserHome;
 use crate::{AppState, AppType, Database, Provider, ProviderService};
 use base64::{engine::general_purpose::STANDARD, Engine};
 use serde_json::{json, Value};
@@ -52,7 +52,7 @@ fn pi_provider_url_is_accepted() {
 #[test]
 #[serial]
 fn pi_direct_import_saves_native_provider() {
-    let _home = TestHomeGuard::new();
+    let _home = TempUserHome::new();
     let _agent = TestAgentDir::new();
     let state = AppState::new(Arc::new(Database::memory().unwrap()));
     let mut request = request();
@@ -143,7 +143,7 @@ fn seed_native(state: &AppState) -> (Value, Vec<(PathBuf, Vec<u8>)>) {
 #[test]
 #[serial]
 fn pi_url_to_import_preserves_encoding_membership_defaults_and_other_apps() {
-    let _home = TestHomeGuard::new();
+    let _home = TempUserHome::new();
     let _agent = TestAgentDir::new();
     let state = state();
     let (original, untouched) = seed_native(&state);
@@ -244,7 +244,7 @@ fn pi_url_to_import_preserves_encoding_membership_defaults_and_other_apps() {
 #[test]
 #[serial]
 fn pi_first_save_only_does_not_create_native_config_or_select_a_provider() {
-    let _home = TestHomeGuard::new();
+    let _home = TempUserHome::new();
     let _agent = TestAgentDir::new();
     let state = state();
     let parsed = parse_deeplink_url(&url(&request())).unwrap();
@@ -259,7 +259,7 @@ fn pi_first_save_only_does_not_create_native_config_or_select_a_provider() {
 #[test]
 #[serial]
 fn pi_missing_or_invalid_fields_fail_before_writing() {
-    let _home = TestHomeGuard::new();
+    let _home = TempUserHome::new();
     let _agent = TestAgentDir::new();
     let state = state();
     let mut invalid = Vec::new();
@@ -311,7 +311,7 @@ fn pi_missing_or_invalid_fields_fail_before_writing() {
 #[test]
 #[serial]
 fn pi_rejects_inline_and_remote_config_without_silently_ignoring_it() {
-    let _home = TestHomeGuard::new();
+    let _home = TempUserHome::new();
     let _agent = TestAgentDir::new();
     let state = state();
     for remote in [false, true] {
@@ -334,7 +334,7 @@ fn pi_rejects_inline_and_remote_config_without_silently_ignoring_it() {
 #[test]
 #[serial]
 fn pi_usage_settings_and_provider_credentials_survive_native_refresh() {
-    let _home = TestHomeGuard::new();
+    let _home = TempUserHome::new();
     let _agent = TestAgentDir::new();
     let state = state();
     let code = "({ request: { url: '{{baseUrl}}/balance?name=中文' }, extractor: function() { return { remaining: 0 }; } })";
@@ -394,7 +394,7 @@ fn pi_usage_settings_and_provider_credentials_survive_native_refresh() {
 #[test]
 #[serial]
 fn pi_presentation_metadata_survives_save_update_and_native_refresh() {
-    let _home = TestHomeGuard::new();
+    let _home = TempUserHome::new();
     let _agent = TestAgentDir::new();
     let state = state();
     let parsed = parse_deeplink_url(&url(&request())).unwrap();
@@ -427,7 +427,7 @@ fn pi_presentation_metadata_survives_save_update_and_native_refresh() {
 #[test]
 #[serial]
 fn pi_invalid_usage_config_is_rejected_by_existing_service_validation() {
-    let _home = TestHomeGuard::new();
+    let _home = TempUserHome::new();
     let _agent = TestAgentDir::new();
     let state = state();
     let (original, _) = seed_native(&state);
@@ -446,7 +446,7 @@ fn pi_invalid_usage_config_is_rejected_by_existing_service_validation() {
 #[test]
 #[serial]
 fn pi_malformed_or_unwritable_native_config_never_leaves_a_saved_import() {
-    let _home = TestHomeGuard::new();
+    let _home = TempUserHome::new();
     let _agent = TestAgentDir::new();
     let state = state();
     let path = pi_config::get_pi_models_path().unwrap();
@@ -480,7 +480,7 @@ fn pi_malformed_or_unwritable_native_config_never_leaves_a_saved_import() {
 #[test]
 #[serial]
 fn pi_database_failure_rolls_back_only_the_inserted_native_provider() {
-    let _home = TestHomeGuard::new();
+    let _home = TempUserHome::new();
     let _agent = TestAgentDir::new();
     let state = state();
     let (original, untouched) = seed_native(&state);
@@ -504,7 +504,7 @@ fn pi_database_failure_rolls_back_only_the_inserted_native_provider() {
 #[serial]
 fn pi_rollback_preserves_a_concurrent_native_edit_and_reports_the_conflict() {
     use rusqlite::hooks::{AuthAction, AuthContext, Authorization};
-    let _home = TestHomeGuard::new();
+    let _home = TempUserHome::new();
     let _agent = TestAgentDir::new();
     let state = state();
     let (original, _) = seed_native(&state);

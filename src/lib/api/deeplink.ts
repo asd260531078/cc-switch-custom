@@ -72,15 +72,6 @@ export interface DeepLinkImportRequest {
   usageAutoInterval?: number;
 }
 
-export interface McpImportResult {
-  importedCount: number;
-  importedIds: string[];
-  failed: Array<{
-    id: string;
-    error: string;
-  }>;
-}
-
 export type ImportResult =
   | string
   | { type: "provider"; id: string }
@@ -119,15 +110,6 @@ export const deeplinkApi = {
   },
 
   /**
-   * Parse a deep link URL
-   * @param url The ccswitch:// URL to parse
-   * @returns Parsed deep link request
-   */
-  parseDeeplink: async (url: string): Promise<DeepLinkImportRequest> => {
-    return invoke("parse_deeplink", { url });
-  },
-
-  /**
    * Merge configuration from Base64/URL into a deep link request
    * This is used to show the complete configuration in the confirmation dialog
    * @param request The deep link import request
@@ -137,14 +119,6 @@ export const deeplinkApi = {
     request: DeepLinkImportRequest,
   ): Promise<DeepLinkImportRequest> => {
     return invoke("merge_deeplink_config", { request });
-  },
-
-  /**
-   * 下载链接里 `iconUrl` 指向的图标，返回核对过类型的 data URI；
-   * 任何失败（地址不合规、超时、类型不符等）都返回 null，原因只进后端日志
-   */
-  fetchDeeplinkIcon: async (url: string): Promise<string | null> => {
-    return invoke("fetch_deeplink_icon", { url });
   },
 
   /**

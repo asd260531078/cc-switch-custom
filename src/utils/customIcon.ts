@@ -19,7 +19,7 @@ export const MAX_UPLOAD_BYTES = 2 * 1024 * 1024;
 const MAX_SOURCE_DIMENSION = 4096;
 
 /** 输出尺寸：32px 图标框在 3 倍屏上的像素数 */
-const OUTPUT_SIZE = 96;
+export const OUTPUT_SIZE = 96;
 
 /**
  * 透明 logo 占输出画布的比例，和 ProviderIconBox 里透明 logo（22px）在 32px 框里的比例一致。
@@ -185,12 +185,11 @@ export async function normalizeIconFile(file: File): Promise<string> {
   return rasterize(await readAsDataUrl(file, mimeType));
 }
 
-/** 后端下载的图标最大 256 KB，base64 之后再留一点前缀的余量 */
+/** 256 KB 的图标大小上限，计入 base64 编码和 data URI 前缀。 */
 const MAX_DOWNLOADED_DATA_URI_LENGTH = Math.ceil((256 * 1024 * 4) / 3) + 64;
 
 /**
- * 把深链接 `iconUrl` 下载回来的图片（后端 `fetch_deeplink_icon` 核对过类型的 data URI）
- * 转成可以存进 `provider.icon` 的 PNG data URI，流程和上传一样。
+ * 用与文件上传相同的流程，把校验过的图标转换为 PNG data URI。
  */
 export async function normalizeIconDataUri(dataUri: string): Promise<string> {
   const accepted = Object.keys(ACCEPTED_TYPES).some((type) =>

@@ -298,5 +298,3 @@ export function DatabaseUpgrade({ payload }: DatabaseUpgradeProps) {
     </div>
   );
 }
-
-export default DatabaseUpgrade;

@@ -28,7 +28,7 @@
 
 </div>
 
-Custom source: `4.0.3301`, based on official `v4.0.33`. This source sync has not been released. Use [this repository’s Releases](https://github.com/asd260531078/cc-switch-custom/releases/latest) for Windows x64/macOS Universal installers. Homebrew and Linux instructions below refer to the official distribution. [Custom changes and upgrade requirements](docs/release-notes/v4.0.3301-zh.md).
+本儲存庫客製原始碼版本為 `4.0.3401`，以官方 `v4.0.34` 正式版為基礎。[版本說明](docs/release-notes/v4.0.3401-zh.md)包含資料庫升級和回退步驟。Windows x64 與 macOS Universal 安裝包請見[本儲存庫 Releases](https://github.com/asd260531078/cc-switch-custom/releases/latest)。下方 Homebrew 與 Linux 安裝方式適用於官方發行版。
 
 
 ## 為什麼選擇 CC Switch？

@@ -28,7 +28,7 @@
 
 </div>
 
-本リポジトリのカスタム版ソースは公式安定版 `v4.0.33` をベースにした `4.0.3301` です。Claude Desktop/Pi のインポート、Codex のディープリンク認証、Web サイトのロゴ、本リポジトリの更新チャネルを維持しています。インストーラーは[本リポジトリの Releases](https://github.com/asd260531078/cc-switch-custom/releases/latest)から取得できます。今回同期したソースはまだリリースしていません。変更内容と更新時の注意は[カスタム版のリリースノート](docs/release-notes/v4.0.3301-zh.md)を参照してください。以下の Homebrew および Linux のインストール手順は公式配布版向けです。
+本リポジトリのカスタム版ソースは公式安定版 `v4.0.34` をベースにした `4.0.3401` です。Claude Desktop/Pi のインポート、Codex のディープリンク認証、Web サイトのロゴ、本リポジトリの更新チャネルを維持しています。変更点とデータベースの更新手順は[カスタム版のリリースノート](docs/release-notes/v4.0.3401-zh.md)をご覧ください。Windows x64 と macOS Universal のインストーラーは[本リポジトリの Releases](https://github.com/asd260531078/cc-switch-custom/releases/latest)から取得できます。以下の Homebrew および Linux のインストール手順は公式配布版向けです。
 
 ## CC Switch を選ぶ理由
 

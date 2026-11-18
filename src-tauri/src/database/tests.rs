@@ -184,6 +184,154 @@ fn existing_skill_repo_selection_is_not_supplemented() {
 }
 
 #[test]
+fn migration_v26_to_v27_adds_skill_repo_host() {
+    let conn = Connection::open_in_memory().expect("open memory db");
+    conn.execute_batch(
+        r#"
+        CREATE TABLE skills (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            directory TEXT NOT NULL,
+            repo_owner TEXT,
+            repo_name TEXT
+        );
+        INSERT INTO skills (id, name, directory, repo_owner, repo_name)
+        VALUES ('owner/repo:demo', 'Demo', 'demo', 'owner', 'repo');
+
+        CREATE TABLE skill_repos (
+            owner TEXT NOT NULL, name TEXT NOT NULL, branch TEXT NOT NULL DEFAULT 'main',
+            enabled BOOLEAN NOT NULL DEFAULT 1, PRIMARY KEY (owner, name)
+        );
+        INSERT INTO skill_repos (owner, name, branch, enabled)
+        VALUES ('owner', 'repo', 'develop', 0);
+        "#,
+    )
+    .expect("seed v26 skill tables");
+    Database::set_user_version(&conn, 26).expect("set user_version=26");
+
+    Database::apply_schema_migrations_on_conn(&conn).expect("apply migrations");
+
+    assert_eq!(
+        Database::get_user_version(&conn).expect("version after migration"),
+        SCHEMA_VERSION
+    );
+    // 已有仓库原样保留，主机靠列默认值落成 github.com
+    let (host, branch, enabled): (String, String, bool) = conn
+        .query_row("SELECT host, branch, enabled FROM skill_repos", [], |row| {
+            Ok((row.get(0)?, row.get(1)?, row.get(2)?))
+        })
+        .expect("migrated repo");
+    assert_eq!(
+        (host.as_str(), branch.as_str(), enabled),
+        ("github.com", "develop", false)
+    );
+    // 已安装的技能不回填：NULL 就按 github.com 读
+    let repo_host: Option<String> = conn
+        .query_row("SELECT repo_host FROM skills", [], |row| row.get(0))
+        .expect("migrated skill");
+    assert_eq!(repo_host, None);
+}
+
+#[test]
+#[serial_test::serial]
+fn startup_upgrades_v26_and_preserves_a_rollback_snapshot() -> Result<(), AppError> {
+    let home = crate::test_support::TestHome::new();
+    let dir = get_app_config_dir();
+    assert!(dir.starts_with(home.path()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let path = dir.join("cc-switch.db");
+
+    let old = Connection::open(&path).unwrap();
+    Database::create_tables_on_conn(&old)?;
+    // Recreate the v26 layout used by the previous release.
+    old.execute_batch(
+        r#"
+        ALTER TABLE skills DROP COLUMN repo_host;
+        ALTER TABLE skill_repos DROP COLUMN host;
+        PRAGMA user_version = 26;
+        INSERT INTO skill_repos (owner, name, branch, enabled)
+        VALUES ('owner', 'repo', 'develop', 0);
+        INSERT INTO skills (id, name, directory, repo_owner, repo_name,
+                            enabled_codex, enabled_workbuddy, content_hash)
+        VALUES ('owner/repo:demo', 'Demo', 'demo', 'owner', 'repo', 1, 1, 'fixture-hash');
+        INSERT INTO providers (id, app_type, name, settings_config, meta, is_current)
+        VALUES ('fixture', 'codex', 'Custom', '{}', '{"iconUrl":"https://example.com/logo.png"}', 1);
+        INSERT INTO model_pricing (model_id, display_name, input_cost_per_million, output_cost_per_million)
+        VALUES ('qwen4-max', 'Custom price', '2.25', '5.50');
+        "#,
+    )
+    .unwrap();
+    drop(old);
+
+    let assert_existing_data = |conn: &Connection| {
+        let integrity: String = conn
+            .query_row("PRAGMA integrity_check", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(integrity, "ok");
+        let skill: (bool, bool, String) = conn
+            .query_row(
+                "SELECT enabled_codex, enabled_workbuddy, content_hash FROM skills WHERE id = 'owner/repo:demo'",
+                [],
+                |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+            )
+            .unwrap();
+        assert_eq!(skill, (true, true, "fixture-hash".to_string()));
+        let provider: (String, bool) = conn
+            .query_row("SELECT json_extract(meta, '$.iconUrl'), is_current FROM providers WHERE id = 'fixture'", [], |r| {
+                Ok((r.get(0)?, r.get(1)?))
+            })
+            .unwrap();
+        assert_eq!(provider, ("https://example.com/logo.png".to_string(), true));
+        let price: (String, String) = conn
+            .query_row("SELECT input_cost_per_million, output_cost_per_million FROM model_pricing WHERE model_id = 'qwen4-max'", [], |r| {
+                Ok((r.get(0)?, r.get(1)?))
+            })
+            .unwrap();
+        assert_eq!(price, ("2.25".to_string(), "5.50".to_string()));
+    };
+
+    // Reopening the migrated database must leave the data and the snapshot intact.
+    for _ in 0..2 {
+        let db = Database::init()?;
+        let conn = lock_conn!(db.conn);
+        assert_eq!(Database::get_user_version(&conn)?, SCHEMA_VERSION);
+        assert_existing_data(&conn);
+        let repo: (String, String, bool) = conn
+            .query_row("SELECT host, branch, enabled FROM skill_repos WHERE owner = 'owner' AND name = 'repo'", [], |r| {
+                Ok((r.get(0)?, r.get(1)?, r.get(2)?))
+            })
+            .unwrap();
+        assert_eq!(
+            repo,
+            ("github.com".to_string(), "develop".to_string(), false)
+        );
+        let host: Option<String> = conn
+            .query_row("SELECT repo_host FROM skills", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(host, None);
+    }
+
+    // Older databases may also get a post-migration backup before VACUUM.
+    let mut migration_backup = None;
+    for backup in Database::list_backups()? {
+        let snapshot_path = dir.join("backups").join(backup.filename);
+        let snapshot =
+            Connection::open_with_flags(&snapshot_path, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY)
+                .expect("open database snapshot");
+        if Database::get_user_version(&snapshot)? == 26 {
+            assert!(migration_backup.replace(snapshot_path).is_none());
+        }
+    }
+    std::fs::copy(migration_backup.expect("schema 26 backup"), &path).unwrap();
+    let restored = Connection::open(&path).unwrap();
+    assert_eq!(Database::get_user_version(&restored)?, 26);
+    assert!(!Database::has_column(&restored, "skills", "repo_host")?);
+    assert!(!Database::has_column(&restored, "skill_repos", "host")?);
+    assert_existing_data(&restored);
+    Ok(())
+}
+
+#[test]
 fn schema_migration_sets_user_version_when_missing() {
     let conn = Connection::open_in_memory().expect("open memory db");
 
@@ -699,7 +847,7 @@ fn migration_from_v3_8_schema_v1_to_current_schema_v3() {
 }
 
 #[test]
-fn schema_dry_run_does_not_write_to_disk() {
+fn json_migration_accepts_minimal_config() {
     // Create minimal valid config for migration
     let mut apps = HashMap::new();
     apps.insert("claude".to_string(), ProviderManager::default());
@@ -714,16 +862,16 @@ fn schema_dry_run_does_not_write_to_disk() {
         claude_common_config_snippet: None,
     };
 
-    // Dry-run should succeed without any file I/O errors
-    let result = Database::migrate_from_json_dry_run(&config);
+    let db = Database::memory().expect("create memory db");
+    let result = db.migrate_from_json(&config);
     assert!(
         result.is_ok(),
-        "Dry-run should succeed with valid config: {result:?}"
+        "Migration should succeed with valid config: {result:?}"
     );
 }
 
 #[test]
-fn dry_run_validates_schema_compatibility() {
+fn json_migration_imports_provider_data() {
     // Create config with actual provider data
     let mut providers = IndexMap::new();
     providers.insert(
@@ -764,12 +912,14 @@ fn dry_run_validates_schema_compatibility() {
         claude_common_config_snippet: None,
     };
 
-    // Dry-run should validate the full migration path
-    let result = Database::migrate_from_json_dry_run(&config);
+    let db = Database::memory().expect("create memory db");
+    let result = db.migrate_from_json(&config);
     assert!(
         result.is_ok(),
-        "Dry-run should succeed with provider data: {result:?}"
+        "Migration should succeed with provider data: {result:?}"
     );
+    let migrated = db.get_all_providers("claude").expect("read providers");
+    assert_eq!(migrated["test-provider"].name, "Test Provider");
 }
 
 #[test]
@@ -1296,6 +1446,32 @@ fn model_pricing_refresh_finishes_old_repair_chains_and_preserves_custom_prices(
 }
 
 #[test]
+fn model_pricing_seed_includes_qwen4_max() {
+    let db = Database::memory().expect("create memory db");
+    let conn = db.conn.lock().expect("lock conn");
+
+    let price: (String, String, String, String) = conn
+        .query_row(
+            "SELECT input_cost_per_million, output_cost_per_million,
+                    cache_read_cost_per_million, cache_creation_cost_per_million
+             FROM model_pricing WHERE model_id = 'qwen4-max'",
+            [],
+            |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?)),
+        )
+        .expect("query Qwen4 Max price");
+
+    assert_eq!(
+        price,
+        (
+            "1.50".to_string(),
+            "4.50".to_string(),
+            "0.075".to_string(),
+            "1.875".to_string(),
+        )
+    );
+}
+
+#[test]
 fn model_pricing_seed_includes_gpt_6_astra() {
     let db = Database::memory().expect("create memory db");
     let conn = db.conn.lock().expect("lock conn");
@@ -1655,8 +1831,7 @@ fn migration_from_v24_adds_copilot_and_workbuddy_flags_without_changing_dsh_stat
 
     Database::apply_schema_migrations_on_conn(&conn).expect("upgrade v24 database");
     // v24 → v25（Copilot）→ v26（WorkBuddy）
-    assert_eq!(Database::get_user_version(&conn).unwrap(), 26);
-    assert_eq!(SCHEMA_VERSION, 26);
+    assert_eq!(Database::get_user_version(&conn).unwrap(), SCHEMA_VERSION);
     for table in ["mcp_servers", "skills"] {
         let flags: (bool, bool, bool) = conn
             .query_row(
@@ -1751,12 +1926,11 @@ async fn proxy_dao_calls_survive_a_poisoned_lock() {
     let db = std::sync::Arc::new(Database::memory().expect("memory db"));
     db.set_proxy_flags_sync("claude", true, true)
         .expect("set flags");
-    db.update_proxy_config(crate::proxy::types::ProxyConfig {
-        listen_port: 25721,
-        ..Default::default()
-    })
-    .await
-    .expect("set port");
+    let mut proxy = db.get_global_proxy_config().await.expect("set port");
+    proxy.listen_port = 25721;
+    db.update_global_proxy_config(proxy)
+        .await
+        .expect("set port");
 
     // 每次调用前都重新毒化，确保每个调用点自己完成恢复
     let poison = || {
@@ -1778,11 +1952,6 @@ async fn proxy_dao_calls_survive_a_poisoned_lock() {
         db.get_proxy_flags_sync("claude"),
         (true, false),
         "get_proxy_flags_sync after poison"
-    );
-    poison();
-    assert!(
-        db.is_live_takeover_active_sync(),
-        "is_live_takeover_active_sync after poison"
     );
     poison();
     assert_eq!(

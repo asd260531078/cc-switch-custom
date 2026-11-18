@@ -28,7 +28,7 @@
 
 </div>
 
-Der aktuelle angepasste Quellcode hat die Version `4.0.3301` und basiert auf der offiziellen stabilen Version `v4.0.33`. Claude-Desktop/Pi-Importe, Codex-Deep-Link-Authentifizierung, Website-Logos und der Updatekanal dieses Repositorys bleiben erhalten. Installationspakete stehen unter [Releases dieses Repositorys](https://github.com/asd260531078/cc-switch-custom/releases/latest); diese Quellcode-Synchronisierung wurde noch nicht veröffentlicht. Änderungen und Upgrade-Hinweise stehen in den [angepassten Versionshinweisen](docs/release-notes/v4.0.3301-zh.md). Die folgenden Homebrew- und Linux-Anleitungen beziehen sich auf die offizielle Version.
+Der angepasste Quellcode hat die Version `4.0.3401` und basiert auf der offiziellen stabilen Version `v4.0.34`. Die [Versionshinweise](docs/release-notes/v4.0.3401-zh.md) beschreiben die Änderungen und das Datenbank-Upgrade. Installationspakete für Windows x64 und macOS Universal stehen unter [Releases dieses Repositorys](https://github.com/asd260531078/cc-switch-custom/releases/latest). Die folgenden Homebrew- und Linux-Anleitungen beziehen sich auf die offizielle Distribution.
 
 ## Warum CC Switch?
 
