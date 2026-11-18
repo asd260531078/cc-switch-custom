@@ -92,7 +92,7 @@ fn seed_native(state: &AppState) -> (Value, Vec<(PathBuf, Vec<u8>)>) {
     state
         .db
         .save_provider(
-            "pi",
+            &AppType::Pi,
             &Provider::with_id(
                 "anthropic".into(),
                 "Existing saved provider".into(),
@@ -101,7 +101,10 @@ fn seed_native(state: &AppState) -> (Value, Vec<(PathBuf, Vec<u8>)>) {
             ),
         )
         .unwrap();
-    state.db.set_current_provider("pi", "anthropic").unwrap();
+    state
+        .db
+        .set_current_provider(&AppType::Pi, "anthropic")
+        .unwrap();
     let untouched = vec![
         (
             agent.join("settings.json"),
@@ -127,7 +130,7 @@ fn seed_native(state: &AppState) -> (Value, Vec<(PathBuf, Vec<u8>)>) {
     state
         .db
         .save_provider(
-            "codex",
+            &AppType::Codex,
             &Provider::with_id(
                 "other-app".into(),
                 "Other app".into(),
@@ -136,7 +139,10 @@ fn seed_native(state: &AppState) -> (Value, Vec<(PathBuf, Vec<u8>)>) {
             ),
         )
         .unwrap();
-    state.db.set_current_provider("codex", "other-app").unwrap();
+    state
+        .db
+        .set_current_provider(&AppType::Codex, "other-app")
+        .unwrap();
     (native, untouched)
 }
 
@@ -155,8 +161,10 @@ fn pi_url_to_import_preserves_encoding_membership_defaults_and_other_apps() {
     request.icon = Some("pi".into());
     request.icon_url = Some("https://logo.example.com/Logo%2FOne.png?Case=A%2BB".into());
     request.notes = Some("Imported fixture".into());
-    let original_saved = serde_json::to_value(state.db.get_all_providers("pi").unwrap()).unwrap();
-    let other_app = serde_json::to_value(state.db.get_all_providers("codex").unwrap()).unwrap();
+    let original_saved =
+        serde_json::to_value(state.db.get_all_providers(&AppType::Pi).unwrap()).unwrap();
+    let other_app =
+        serde_json::to_value(state.db.get_all_providers(&AppType::Codex).unwrap()).unwrap();
     let mut ids = Vec::new();
 
     for enabled in [None, Some(false), Some(true), Some(true)] {
@@ -173,7 +181,11 @@ fn pi_url_to_import_preserves_encoding_membership_defaults_and_other_apps() {
             "repeated imports need distinct native IDs"
         );
         ids.push(id.clone());
-        let provider = state.db.get_provider_by_id(&id, "pi").unwrap().unwrap();
+        let provider = state
+            .db
+            .get_provider_by_id(&id, &AppType::Pi)
+            .unwrap()
+            .unwrap();
         assert_eq!(provider.name, request.name.clone().unwrap());
         assert_eq!(provider.icon.as_deref(), Some("pi"));
         assert_eq!(
@@ -211,7 +223,7 @@ fn pi_url_to_import_preserves_encoding_membership_defaults_and_other_apps() {
             serde_json::to_value(
                 state
                     .db
-                    .get_provider_by_id("anthropic", "pi")
+                    .get_provider_by_id("anthropic", &AppType::Pi)
                     .unwrap()
                     .unwrap()
             )
@@ -225,7 +237,7 @@ fn pi_url_to_import_preserves_encoding_membership_defaults_and_other_apps() {
             Some("anthropic")
         );
         assert_eq!(
-            serde_json::to_value(state.db.get_all_providers("codex").unwrap()).unwrap(),
+            serde_json::to_value(state.db.get_all_providers(&AppType::Codex).unwrap()).unwrap(),
             other_app
         );
         assert_eq!(
@@ -304,7 +316,7 @@ fn pi_missing_or_invalid_fields_fail_before_writing() {
             "IPC must validate too"
         );
     }
-    assert!(state.db.get_all_providers("pi").unwrap().is_empty());
+    assert!(state.db.get_all_providers(&AppType::Pi).unwrap().is_empty());
     assert!(!pi_config::get_pi_models_path().unwrap().exists());
 }
 
@@ -327,7 +339,7 @@ fn pi_rejects_inline_and_remote_config_without_silently_ignoring_it() {
             .to_string();
         assert!(error.contains("config/configUrl is not supported"));
     }
-    assert!(state.db.get_all_providers("pi").unwrap().is_empty());
+    assert!(state.db.get_all_providers(&AppType::Pi).unwrap().is_empty());
     assert!(!pi_config::get_pi_models_path().unwrap().exists());
 }
 
@@ -440,7 +452,7 @@ fn pi_invalid_usage_config_is_rejected_by_existing_service_validation() {
         .to_string();
     assert!(error.contains("1440"));
     assert_eq!(models(), original);
-    assert_eq!(state.db.get_all_providers("pi").unwrap().len(), 1);
+    assert_eq!(state.db.get_all_providers(&AppType::Pi).unwrap().len(), 1);
 }
 
 #[test]
@@ -461,7 +473,7 @@ fn pi_malformed_or_unwritable_native_config_never_leaves_a_saved_import() {
                 parse_deeplink_url(&url(&input)).unwrap()
             )
             .is_err());
-            assert!(state.db.get_all_providers("pi").unwrap().is_empty());
+            assert!(state.db.get_all_providers(&AppType::Pi).unwrap().is_empty());
             assert_eq!(fs::read_to_string(&path).unwrap(), bytes);
         }
     }
@@ -474,7 +486,7 @@ fn pi_malformed_or_unwritable_native_config_never_leaves_a_saved_import() {
         import_provider_from_deeplink(&state, parse_deeplink_url(&url(&input)).unwrap()).is_err()
     );
     assert!(path.is_dir());
-    assert!(state.db.get_all_providers("pi").unwrap().is_empty());
+    assert!(state.db.get_all_providers(&AppType::Pi).unwrap().is_empty());
 }
 
 #[test]
@@ -494,7 +506,7 @@ fn pi_database_failure_rolls_back_only_the_inserted_native_provider() {
         .to_string();
     assert!(error.contains("pi import test failure"));
     assert_eq!(models(), original);
-    assert_eq!(state.db.get_all_providers("pi").unwrap().len(), 1);
+    assert_eq!(state.db.get_all_providers(&AppType::Pi).unwrap().len(), 1);
     for (path, bytes) in untouched {
         assert_eq!(fs::read(path).unwrap(), bytes);
     }
@@ -551,5 +563,5 @@ fn pi_rollback_preserves_a_concurrent_native_edit_and_reports_the_conflict() {
     assert!(providers
         .iter()
         .any(|(id, config)| id != "anthropic" && config["externalChange"] == true));
-    assert_eq!(state.db.get_all_providers("pi").unwrap().len(), 1);
+    assert_eq!(state.db.get_all_providers(&AppType::Pi).unwrap().len(), 1);
 }

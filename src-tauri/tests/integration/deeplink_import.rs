@@ -164,7 +164,7 @@ fn deeplink_import_opencode_generates_editable_ids_and_preserves_display_names()
             let id = import_provider_from_deeplink(&state, request).unwrap();
             assert!(key_pattern.is_match(&id), "uneditable provider ID: {id}");
             assert!(ids.insert(id.clone()), "duplicate provider ID: {id}");
-            let providers = db.get_all_providers("opencode").unwrap();
+            let providers = db.get_all_providers(&AppType::OpenCode).unwrap();
             let provider = providers.get(&id).unwrap();
             assert_eq!(provider.name, name);
             let live: serde_json::Value = serde_json::from_slice(
@@ -174,7 +174,10 @@ fn deeplink_import_opencode_generates_editable_ids_and_preserves_display_names()
             assert_eq!(live["provider"][&id], provider.settings_config);
         }
     }
-    assert_eq!(db.get_all_providers("opencode").unwrap().len(), ids.len());
+    assert_eq!(
+        db.get_all_providers(&AppType::OpenCode).unwrap().len(),
+        ids.len()
+    );
 }
 
 #[test]
@@ -193,7 +196,9 @@ fn deeplink_import_claude_provider_persists_to_db() {
         .expect("import provider from deeplink");
 
     // Verify DB state
-    let providers = db.get_all_providers("claude").expect("get providers");
+    let providers = db
+        .get_all_providers(&AppType::Claude)
+        .expect("get providers");
     let provider = providers
         .get(&provider_id)
         .expect("provider created via deeplink");
@@ -264,7 +269,10 @@ fn site_logos_persist_independently_of_shared_api_endpoint_and_usage_configurati
         ids.push(import_url(&state, &url));
     }
     for (id, (_, homepage, logo)) in ids.iter().zip(fixtures) {
-        let stored = db.get_provider_by_id(id, "claude").unwrap().unwrap();
+        let stored = db
+            .get_provider_by_id(id, &AppType::Claude)
+            .unwrap()
+            .unwrap();
         assert_eq!(stored.icon.as_deref(), Some("newapi"));
         assert_eq!(stored.website_url.as_deref(), Some(homepage));
         assert_eq!(
@@ -288,9 +296,9 @@ fn site_logos_persist_independently_of_shared_api_endpoint_and_usage_configurati
         let exported = serde_json::to_value(&stored).unwrap();
         assert_eq!(exported["meta"]["iconUrl"], logo);
         let restored: Provider = serde_json::from_value(exported).unwrap();
-        db.save_provider("claude", &restored).unwrap();
+        db.save_provider(&AppType::Claude, &restored).unwrap();
         assert_eq!(
-            db.get_provider_by_id(id, "claude")
+            db.get_provider_by_id(id, &AppType::Claude)
                 .unwrap()
                 .unwrap()
                 .meta
@@ -301,11 +309,14 @@ fn site_logos_persist_independently_of_shared_api_endpoint_and_usage_configurati
         );
     }
     // Metadata edits remain scoped to one supplier, even with the same API URL.
-    let mut first = db.get_provider_by_id(&ids[0], "claude").unwrap().unwrap();
+    let mut first = db
+        .get_provider_by_id(&ids[0], &AppType::Claude)
+        .unwrap()
+        .unwrap();
     first.meta.as_mut().unwrap().icon_url = None;
-    db.save_provider("claude", &first).unwrap();
+    db.save_provider(&AppType::Claude, &first).unwrap();
     assert_eq!(
-        db.get_provider_by_id(&ids[1], "claude")
+        db.get_provider_by_id(&ids[1], &AppType::Claude)
             .unwrap()
             .unwrap()
             .meta
@@ -331,7 +342,9 @@ fn deeplink_import_codex_provider_builds_auth_and_config() {
     let provider_id = import_provider_from_deeplink(&state, request.clone())
         .expect("import provider from deeplink");
 
-    let providers = db.get_all_providers("codex").expect("get providers");
+    let providers = db
+        .get_all_providers(&AppType::Codex)
+        .expect("get providers");
     let provider = providers
         .get(&provider_id)
         .expect("provider created via deeplink");
@@ -404,7 +417,7 @@ fn deeplink_codex_explicit_models_reach_the_live_catalog() {
     );
     let provider_id = import_url(&state, &url);
     let provider = db
-        .get_provider_by_id(&provider_id, "codex")
+        .get_provider_by_id(&provider_id, &AppType::Codex)
         .unwrap()
         .expect("saved Codex provider");
     assert_eq!(
@@ -520,7 +533,7 @@ fn deeplink_codex_import_and_switch_use_the_key_without_manual_edits() {
                 }
                 let id = import_url(&state, &provider_url("codex", "Relay", &params));
                 let stored = db
-                    .get_provider_by_id(&id, "codex")
+                    .get_provider_by_id(&id, &AppType::Codex)
                     .expect("query imported provider")
                     .expect("imported provider exists");
                 assert_eq!(
@@ -541,7 +554,7 @@ fn deeplink_codex_import_and_switch_use_the_key_without_manual_edits() {
                 );
                 if !enabled {
                     assert_eq!(
-                        db.get_current_provider("codex").unwrap().as_deref(),
+                        db.get_current_provider(&AppType::Codex).unwrap().as_deref(),
                         Some("official")
                     );
                     assert_eq!(fs::read(&config_path).unwrap(), original_config);
@@ -557,7 +570,7 @@ fn deeplink_codex_import_and_switch_use_the_key_without_manual_edits() {
                             .expect("switch back to official login");
                         assert_eq!(fs::read(&auth_path).unwrap(), original_auth);
                         let retained = db
-                            .get_provider_by_id(&id, "codex")
+                            .get_provider_by_id(&id, &AppType::Codex)
                             .expect("query retained provider")
                             .expect("retained provider exists");
                         assert_eq!(
@@ -582,7 +595,7 @@ fn deeplink_codex_import_and_switch_use_the_key_without_manual_edits() {
                             .expect("switch to imported provider again");
                     }
                     assert_eq!(
-                        db.get_current_provider("codex").unwrap().as_deref(),
+                        db.get_current_provider(&AppType::Codex).unwrap().as_deref(),
                         Some(id.as_str())
                     );
                     let live: toml::Value =
@@ -676,7 +689,7 @@ CUSTOM_NUMBER = 23
 
         let provider_id = import_url(&state, &url);
         let provider = db
-            .get_all_providers(DESKTOP_APP)
+            .get_all_providers(&AppType::ClaudeDesktop)
             .expect("get Desktop providers")
             .get(&provider_id)
             .cloned()
@@ -713,7 +726,7 @@ CUSTOM_NUMBER = 23
             ),
         );
         let inline = db
-            .get_provider_by_id(&inline_id, DESKTOP_APP)
+            .get_provider_by_id(&inline_id, &AppType::ClaudeDesktop)
             .unwrap()
             .unwrap();
         assert_eq!(
@@ -754,7 +767,7 @@ fn deeplink_desktop_safe_claude_models_build_direct_identity_routes() {
 
     let provider_id = import_url(&state, &url);
     let provider = db
-        .get_all_providers(DESKTOP_APP)
+        .get_all_providers(&AppType::ClaudeDesktop)
         .expect("get Desktop providers")
         .get(&provider_id)
         .cloned()
@@ -812,7 +825,7 @@ fn deeplink_desktop_non_claude_tiers_keep_each_official_proxy_role() {
 
     let provider_id = import_url(&state, &url);
     let provider = db
-        .get_all_providers(DESKTOP_APP)
+        .get_all_providers(&AppType::ClaudeDesktop)
         .expect("get Desktop providers")
         .get(&provider_id)
         .cloned()
@@ -878,7 +891,7 @@ fn deeplink_desktop_single_non_claude_model_fills_all_official_roles() {
 
     let provider_id = import_url(&state, &url);
     let provider = db
-        .get_all_providers(DESKTOP_APP)
+        .get_all_providers(&AppType::ClaudeDesktop)
         .expect("get Desktop providers")
         .get(&provider_id)
         .cloned()
@@ -917,7 +930,7 @@ fn deeplink_desktop_disabled_import_preserves_current_settings_and_live_files() 
         ],
     );
     let active_id = import_url(&state, &active_url);
-    db.set_current_provider(DESKTOP_APP, &active_id)
+    db.set_current_provider(&AppType::ClaudeDesktop, &active_id)
         .expect("set existing DB current");
     update_settings(AppSettings {
         current_provider_claude_desktop: Some(active_id.clone()),
@@ -962,7 +975,7 @@ fn deeplink_desktop_disabled_import_preserves_current_settings_and_live_files() 
         import_url(&state, &provider_url(DESKTOP_APP, name, &extra));
 
         assert_eq!(
-            db.get_current_provider(DESKTOP_APP)
+            db.get_current_provider(&AppType::ClaudeDesktop)
                 .expect("get DB current Desktop provider")
                 .as_deref(),
             Some(active_id.as_str())
@@ -974,7 +987,7 @@ fn deeplink_desktop_disabled_import_preserves_current_settings_and_live_files() 
         assert_eq!(snapshot_desktop_files(home), live_before);
     }
     assert_eq!(
-        db.get_all_providers(DESKTOP_APP)
+        db.get_all_providers(&AppType::ClaudeDesktop)
             .expect("get all persisted Desktop providers")
             .len(),
         3,
@@ -997,14 +1010,14 @@ fn deeplink_desktop_disabled_import_preserves_official_or_empty_current() {
         let state = AppState::new(db.clone());
         let expected_current = if official_current {
             let official_id = db
-                .get_all_providers(DESKTOP_APP)
+                .get_all_providers(&AppType::ClaudeDesktop)
                 .expect("get seeded Desktop providers")
                 .into_iter()
                 .find_map(|(id, provider)| {
                     (provider.category.as_deref() == Some("official")).then_some(id)
                 })
                 .expect("Desktop official provider");
-            db.set_current_provider(DESKTOP_APP, &official_id)
+            db.set_current_provider(&AppType::ClaudeDesktop, &official_id)
                 .expect("set official DB current");
             update_settings(AppSettings {
                 current_provider_claude_desktop: Some(official_id.clone()),
@@ -1035,13 +1048,13 @@ fn deeplink_desktop_disabled_import_preserves_official_or_empty_current() {
 
         let imported_id = import_url(&state, &url);
         assert!(
-            db.get_all_providers(DESKTOP_APP)
+            db.get_all_providers(&AppType::ClaudeDesktop)
                 .expect("get Desktop providers")
                 .contains_key(&imported_id),
             "disabled Desktop provider should still be saved"
         );
         assert_eq!(
-            db.get_current_provider(DESKTOP_APP)
+            db.get_current_provider(&AppType::ClaudeDesktop)
                 .expect("get preserved DB current"),
             expected_current
         );
@@ -1081,7 +1094,7 @@ fn deeplink_desktop_enabled_import_switches_and_writes_isolated_profile() {
 
     let provider_id = import_url(&state, &url);
     assert_eq!(
-        db.get_current_provider(DESKTOP_APP)
+        db.get_current_provider(&AppType::ClaudeDesktop)
             .expect("get current Desktop provider")
             .as_deref(),
         Some(provider_id.as_str())
@@ -1146,7 +1159,7 @@ fn deeplink_desktop_enabled_import_switches_and_writes_isolated_profile() {
         get_claude_desktop_default_routes().len()
     );
     assert_eq!(
-        db.get_current_provider(DESKTOP_APP).unwrap(),
+        db.get_current_provider(&AppType::ClaudeDesktop).unwrap(),
         Some(provider_id)
     );
     tauri::async_runtime::block_on(state.proxy_service.stop()).unwrap();
@@ -1165,13 +1178,14 @@ fn deeplink_desktop_route_import_preserves_direct_pointer_and_existing_mode() {
         let direct_id = if official_current {
             db.init_default_official_providers().unwrap();
             let id = db
-                .get_all_providers(DESKTOP_APP)
+                .get_all_providers(&AppType::ClaudeDesktop)
                 .unwrap()
                 .into_values()
                 .find(|provider| provider.category.as_deref() == Some("official"))
                 .unwrap()
                 .id;
-            db.set_current_provider(DESKTOP_APP, &id).unwrap();
+            db.set_current_provider(&AppType::ClaudeDesktop, &id)
+                .unwrap();
             update_settings(AppSettings {
                 current_provider_claude_desktop: Some(id.clone()),
                 ..Default::default()
@@ -1206,12 +1220,15 @@ fn deeplink_desktop_route_import_preserves_direct_pointer_and_existing_mode() {
         assert!(view.attached);
         assert_eq!(view.route_provider_id.as_deref(), Some(active_id.as_str()));
         assert_eq!(view.direct_provider_id, direct_id);
-        assert_eq!(db.get_current_provider(DESKTOP_APP).unwrap(), direct_id);
+        assert_eq!(
+            db.get_current_provider(&AppType::ClaudeDesktop).unwrap(),
+            direct_id
+        );
         assert!(tauri::async_runtime::block_on(
             state.proxy_service.is_running()
         ));
         let meta = provider_meta_json(
-            &db.get_provider_by_id(&active_id, DESKTOP_APP)
+            &db.get_provider_by_id(&active_id, &AppType::ClaudeDesktop)
                 .unwrap()
                 .unwrap(),
         );
@@ -1302,8 +1319,14 @@ fn deeplink_desktop_route_start_failure_keeps_live_configuration() {
     ))
     .unwrap();
     assert!(import_provider_from_deeplink(&state, request).is_err());
-    assert_eq!(db.get_all_providers(DESKTOP_APP).unwrap().len(), 1);
-    assert_eq!(db.get_current_provider(DESKTOP_APP).unwrap(), None);
+    assert_eq!(
+        db.get_all_providers(&AppType::ClaudeDesktop).unwrap().len(),
+        1
+    );
+    assert_eq!(
+        db.get_current_provider(&AppType::ClaudeDesktop).unwrap(),
+        None
+    );
     assert!(!cc_switch_lib::mode::current::is_proxy(
         &AppType::ClaudeDesktop
     ));
@@ -1368,7 +1391,7 @@ fn deeplink_desktop_invalid_credentials_or_urls_have_no_side_effects() {
             .and_then(|request| import_provider_from_deeplink(&state, request));
         assert!(result.is_err(), "invalid Desktop deeplink must be rejected");
         assert!(
-            db.get_all_providers(DESKTOP_APP)
+            db.get_all_providers(&AppType::ClaudeDesktop)
                 .expect("get Desktop providers after rejected import")
                 .is_empty(),
             "rejected import must not create a DB row"
@@ -1390,12 +1413,12 @@ fn agy_deeplink_disabled_provider_does_not_write_native_files() {
     let db = Arc::new(Database::memory().unwrap());
     let state = AppState::new(db.clone());
     let id = import_provider_from_deeplink(&state, request).unwrap();
-    let rows = db.get_all_providers("agy").unwrap();
+    let rows = db.get_all_providers(&AppType::Agy).unwrap();
     assert_eq!(
         rows[&id].settings_config["config"]["model"]["name"],
         "test-model"
     );
-    assert!(db.get_current_provider("agy").unwrap().is_none());
+    assert!(db.get_current_provider(&AppType::Agy).unwrap().is_none());
     assert!(!home.join(".gemini/antigravity-cli/settings.json").exists());
     assert!(!home.join(".gemini/antigravity-cli/bin/agy").exists());
 }

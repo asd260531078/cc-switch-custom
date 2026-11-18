@@ -1,0 +1,33 @@
+{
+  "version": "4.0.3501",
+  "items": [
+    {
+      "type": "new",
+      "zh": "ChatGPT 账号卡片支持 GPT-6.2",
+      "zh-TW": "ChatGPT 帳號卡片支援 GPT-6.2",
+      "en": "ChatGPT-account cards in Claude Code and Desktop support GPT-6.2",
+      "ja": "Claude Code・Desktop の ChatGPT カードが GPT-6.2 に対応"
+    },
+    {
+      "type": "new",
+      "zh": "查看 Codex 完整目标，并复制完整请求 ID",
+      "zh-TW": "查看 Codex 完整目標，並複製完整請求 ID",
+      "en": "Read full Codex goals and copy complete request IDs",
+      "ja": "Codex の目標全文を確認し、リクエスト ID をコピー"
+    },
+    {
+      "type": "fix",
+      "zh": "修复 Codex 聚合模式和终端中的 Responses-Lite 报错",
+      "zh-TW": "修正 Codex 聚合模式和終端中的 Responses-Lite 錯誤",
+      "en": "Fix Responses-Lite errors in Codex aggregate mode and terminal launch",
+      "ja": "Codex の集約モードと端末起動時の Responses-Lite エラーを修正"
+    },
+    {
+      "type": "fix",
+      "zh": "修复用量日期选择卡死及技能副本缺失时无法卸载",
+      "zh-TW": "修正用量日期選擇卡住及技能副本遺失時無法解除安裝",
+      "en": "Fix a usage date picker freeze and allow uninstalling skills with missing copies",
+      "ja": "使用量の日付選択が固まる問題と実体のないスキルの削除を修正"
+    }
+  ]
+}
