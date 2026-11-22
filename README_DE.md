@@ -28,7 +28,7 @@
 
 </div>
 
-Der angepasste Quellcode hat die Version `4.0.3401` und basiert auf der offiziellen stabilen Version `v4.0.34`. Die [Versionshinweise](docs/release-notes/v4.0.3401-zh.md) beschreiben die Änderungen und das Datenbank-Upgrade. Installationspakete für Windows x64 und macOS Universal stehen unter [Releases dieses Repositorys](https://github.com/asd260531078/cc-switch-custom/releases/latest). Die folgenden Homebrew- und Linux-Anleitungen beziehen sich auf die offizielle Distribution.
+Der angepasste Quellcode hat die Version `4.0.3801` und basiert auf der offiziellen stabilen Version `v4.0.38`. Die [Versionshinweise](docs/release-notes/v4.0.3801-zh.md) beschreiben die Änderungen und das Datenbank-Upgrade. Installationspakete für Windows x64 und macOS Universal stehen unter [Releases dieses Repositorys](https://github.com/asd260531078/cc-switch-custom/releases/latest). Die folgenden Homebrew- und Linux-Anleitungen beziehen sich auf die offizielle Distribution.
 
 ## Warum CC Switch?
 

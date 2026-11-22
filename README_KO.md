@@ -28,7 +28,7 @@
 
 </div>
 
-Custom source version `4.0.3401` is based on official `v4.0.34`. See [custom release notes](docs/release-notes/v4.0.3401-zh.md) for changes and database upgrade guidance. Use [this repository’s Releases](https://github.com/asd260531078/cc-switch-custom/releases/latest) for Windows x64 and macOS Universal installers. The Homebrew and Linux instructions below refer to the official distribution.
+Custom source version `4.0.3801` is based on official `v4.0.38`. See [custom release notes](docs/release-notes/v4.0.3801-zh.md) for changes and database upgrade guidance. Use [this repository’s Releases](https://github.com/asd260531078/cc-switch-custom/releases/latest) for Windows x64 and macOS Universal installers. The Homebrew and Linux instructions below refer to the official distribution.
 
 
 ## CC Switch를 써야 하는 이유

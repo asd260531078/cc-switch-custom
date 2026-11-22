@@ -2253,6 +2253,17 @@ impl Database {
             ("gpt-4o", "GPT-4o", "2.50", "10", "1.25", "0"),
             ("gpt-4o-mini", "GPT-4o Mini", "0.15", "0.60", "0.075", "0"),
             // Gemini 4 系列
+            // 来源：https://ai.google.dev/gemini-api/docs/pricing#gemini-4-neon
+            // 标准档（Global）：输入 3.00 / 输出 15.00（含思考）/ 缓存读 0.15（仅隐式缓存，写入记 0），
+            // 与 models.dev google/gemini-4-neon 一致。
+            (
+                "gemini-4-neon",
+                "Gemini 4 Neon",
+                "3.00",
+                "15.00",
+                "0.15",
+                "0",
+            ),
             // 来源：https://ai.google.dev/gemini-api/docs/pricing#gemini-4-argon
             // 录的是标准档介绍价（2026-10-15 抓取）：输入 2.00 / 输出 10.00 / 上下文缓存读 0.10
             // （缓存仅支持隐式，不支持显式写入，cache_creation 记 0，与其他 Gemini 条目口径一致）。
@@ -3922,6 +3933,11 @@ impl Database {
     }
 
     pub(crate) fn ensure_model_pricing_seeded_on_conn(conn: &Connection) -> Result<(), AppError> {
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_model_pricing_nocase ON model_pricing(model_id COLLATE NOCASE)",
+            [],
+        ).map_err(|e| AppError::Database(e.to_string()))?;
+
         // 每次启动都执行 INSERT OR IGNORE，增量追加新模型；仅修复仍等于旧内置值的定价。
         Self::in_savepoint(conn, "seed_model_pricing", || {
             Self::seed_model_pricing(conn)?;

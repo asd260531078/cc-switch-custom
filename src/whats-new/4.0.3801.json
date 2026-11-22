@@ -1,0 +1,33 @@
+{
+  "version": "4.0.3801",
+  "items": [
+    {
+      "type": "new",
+      "zh": "新增插件页面，管理 Claude Code、Codex 等应用的插件",
+      "zh-TW": "新增外掛頁面，管理 Claude Code、Codex 等應用的外掛",
+      "en": "New Plugins page for managing plugins in Claude Code, Codex and more",
+      "ja": "プラグインページを追加し、Claude Code や Codex などのプラグインを管理"
+    },
+    {
+      "type": "new",
+      "zh": "技能仓库可以用访问令牌读取私有仓库",
+      "zh-TW": "技能倉庫可以用存取權杖讀取私有倉庫",
+      "en": "Skill repositories can read private repos with access tokens",
+      "ja": "アクセストークンで非公開のスキルリポジトリを読み込めるように"
+    },
+    {
+      "type": "new",
+      "zh": "一键导入链接支持 WorkBuddy",
+      "zh-TW": "一鍵匯入連結支援 WorkBuddy",
+      "en": "Provider deep links can now import WorkBuddy providers",
+      "ja": "インポートリンクが WorkBuddy のプロバイダーに対応"
+    },
+    {
+      "type": "fix",
+      "zh": "修复用量重复计算，以及主界面变成白条",
+      "zh-TW": "修正用量重複計算，以及主介面變成白條",
+      "en": "Usage is no longer double-counted, and the main window no longer opens as a thin strip",
+      "ja": "使用量の二重計上と、メイン画面が細い帯になる問題を修正"
+    }
+  ]
+}

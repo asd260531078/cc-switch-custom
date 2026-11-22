@@ -32,10 +32,13 @@ describe("withClaudeGatewayDefaults", () => {
     "https://api.anthropic.com",
     "https://api.anthropic.com/v1",
     "https://API.ANTHROPIC.COM/",
-  ])("keeps server checks for a direct official API preset at %s", (baseUrl) => {
-    const direct = { env: { ANTHROPIC_BASE_URL: baseUrl } };
-    expect(withClaudeGatewayDefaults(direct, "third_party")).toBe(direct);
-  });
+  ])(
+    "keeps server checks for a direct official API preset at %s",
+    (baseUrl) => {
+      const direct = { env: { ANTHROPIC_BASE_URL: baseUrl } };
+      expect(withClaudeGatewayDefaults(direct, "third_party")).toBe(direct);
+    },
+  );
 
   it.each([
     "https://api.anthropic.com.gateway.example",

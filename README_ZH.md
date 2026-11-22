@@ -28,7 +28,7 @@
 
 </div>
 
-本仓库定制源码版本为 `4.0.3401`，基于官方 `v4.0.34` 正式版，保留 Claude Desktop/Pi 导入、Codex 深链认证、网站 Logo 和本仓库更新通道。变更和数据库升级说明见[二开更新说明](docs/release-notes/v4.0.3401-zh.md)。Windows x64 与 macOS Universal 安装包见[本仓库 Releases](https://github.com/asd260531078/cc-switch-custom/releases/latest)。下文 Homebrew、Linux 安装方式属于官方发行版。
+本仓库定制源码版本为 `4.0.3801`，基于官方 `v4.0.38` 正式版，保留 Claude Desktop/Pi 导入、Codex 深链认证、网站 Logo 和本仓库更新通道。变更和数据库升级说明见[二开更新说明](docs/release-notes/v4.0.3801-zh.md)。Windows x64 与 macOS Universal 安装包见[本仓库 Releases](https://github.com/asd260531078/cc-switch-custom/releases/latest)。下文 Homebrew、Linux 安装方式属于官方发行版。
 
 ## 为什么选择 CC Switch？
 

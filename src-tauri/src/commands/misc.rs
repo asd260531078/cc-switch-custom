@@ -9,7 +9,6 @@ use std::str::FromStr;
 use std::sync::Arc;
 use std::sync::LazyLock;
 use tauri::AppHandle;
-use tauri_plugin_opener::OpenerExt;
 use tool_lifecycle_progress::ToolLifecycleProgress;
 
 #[path = "tool_discovery.rs"]
@@ -62,9 +61,7 @@ fn validate_external_url(raw: &str) -> Result<String, String> {
 pub async fn open_external(app: AppHandle, url: String) -> Result<bool, String> {
     let url = validate_external_url(&url)?;
 
-    app.opener()
-        .open_url(&url, None::<String>)
-        .map_err(|e| format!("打开链接失败: {e}"))?;
+    crate::host_open::open_url(&app, &url).map_err(|e| format!("打开链接失败: {e}"))?;
 
     Ok(true)
 }
@@ -87,13 +84,11 @@ pub async fn copy_text_to_clipboard(text: String) -> Result<bool, String> {
 
 #[tauri::command]
 pub async fn check_for_updates(handle: AppHandle) -> Result<bool, String> {
-    handle
-        .opener()
-        .open_url(
-            "https://github.com/asd260531078/cc-switch-custom/releases/latest",
-            None::<String>,
-        )
-        .map_err(|e| format!("打开更新页面失败: {e}"))?;
+    crate::host_open::open_url(
+        &handle,
+        "https://github.com/asd260531078/cc-switch-custom/releases/latest",
+    )
+    .map_err(|e| format!("打开更新页面失败: {e}"))?;
 
     Ok(true)
 }
@@ -125,10 +120,7 @@ pub async fn open_portable_update_download(
     let url = portable_zip_url(&version, cfg!(target_arch = "aarch64")).unwrap_or_else(|| {
         "https://github.com/asd260531078/cc-switch-custom/releases/latest".to_string()
     });
-    handle
-        .opener()
-        .open_url(url, None::<String>)
-        .map_err(|e| format!("打开更新页面失败: {e}"))?;
+    crate::host_open::open_url(&handle, &url).map_err(|e| format!("打开更新页面失败: {e}"))?;
 
     Ok(true)
 }
@@ -434,9 +426,11 @@ impl ToolLifecycleCoordinator {
 
         // 必须把锁移进 blocking 任务：即使等待它的 IPC future 被取消，
         // 子进程仍会继续运行，直到它真正退出前都不能允许下一次写入。
+        // 局部变量按声明的逆序释放：工具锁要先于执行锁放开，否则排队的下一个写入
+        // 拿到执行锁、跑完之后，紧接着对这个工具的请求还会撞上没放开的工具锁。
         tokio::task::spawn_blocking(move || {
-            let _tool_guards = tool_guards;
             let _execution_guard = execution_guard;
+            let _tool_guards = tool_guards;
             operation(&tools)
         })
         .await

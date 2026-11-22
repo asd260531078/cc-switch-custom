@@ -55,6 +55,8 @@ jobs:
               - "postcss.config.cjs"
               - "components.json"
               - ".node-version"
+              - "knip.json"
+              - "README*.md"
               - ".github/workflows/ci.yml"
             backend:
               - "src-tauri/**"
@@ -90,6 +92,9 @@ jobs:
 
       - name: Check formatting
         run: pnpm format:check
+
+      - name: Unused files, exports and dependencies
+        run: pnpm knip
 
       - name: Build frontend
         run: pnpm build:renderer

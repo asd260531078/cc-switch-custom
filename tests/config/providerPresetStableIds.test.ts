@@ -345,11 +345,12 @@ const catalogs: Array<{
       "ClinePass",
       "TokenPlus",
       "Genesis",
+      "Mistral AI",
     ],
   },
 ];
 
-describe("provider preset selection IDs through the v4.0.33 sync", () => {
+describe("provider preset selection IDs across upstream syncs", () => {
   it.each(catalogs)(
     "$app retains old selection IDs and appends official additions",
     ({ presets, oldCount, stableIds, appended }) => {
