@@ -44,7 +44,7 @@ import {
   extractCodexBaseUrl,
   extractCodexModelName,
   extractCodexWireApi,
-} from "@/utils/providerConfigUtils";
+} from "@/utils/codexConfigUtils";
 import {
   buildGrokBuildConfig,
   GROK_BUILD_DEFAULT_API_BACKEND,
@@ -55,6 +55,8 @@ import {
 import { resolveProviderIcon } from "@/utils/providerIcon";
 import { useDraftEditorProjection } from "./hooks/useDraftEditorProjection";
 import { GROKBUILD_OFFICIAL_PROVIDER_ID } from "@/utils/providerCapabilities";
+import { resolveManagedAccountId } from "@/lib/authBinding";
+import { GrokAccountSelect } from "./GrokOfficialAccount";
 
 type GrokBuildProviderFormProps = Omit<ProviderFormProps, "appId">;
 
@@ -81,6 +83,7 @@ export function GrokBuildProviderForm({
   showButtons = true,
   inactiveFields = [],
   onEditorBaseChange,
+  onManageAuthAccounts,
 }: GrokBuildProviderFormProps) {
   const { t } = useTranslation();
   const isDarkMode = useDarkMode();
@@ -99,6 +102,10 @@ export function GrokBuildProviderForm({
   const [category, setCategory] = useState<ProviderCategory | undefined>(
     initialData?.category ?? "custom",
   );
+  // 官方卡绑定的授权中心 xAI 账号（null = 跟随 Grok CLI 登录）
+  const [selectedXaiAccountId, setSelectedXaiAccountId] = useState<
+    string | null
+  >(() => resolveManagedAccountId(initialData?.meta, "xai_oauth"));
   const [isPartner, setIsPartner] = useState(
     initialData?.meta?.isPartner ?? false,
   );
@@ -340,6 +347,15 @@ export function GrokBuildProviderForm({
       const meta: ProviderMeta = { ...(initialData?.meta ?? {}) };
       if (values.iconUrl) meta.iconUrl = values.iconUrl;
       else delete meta.iconUrl;
+      if (selectedXaiAccountId) {
+        meta.authBinding = {
+          source: "managed_account",
+          authProvider: "xai_oauth",
+          accountId: selectedXaiAccountId,
+        };
+      } else {
+        delete meta.authBinding;
+      }
       await onSubmit({
         ...values,
         name,
@@ -483,6 +499,34 @@ export function GrokBuildProviderForm({
         )}
 
         <BasicFormFields form={form} />
+
+        {category === "official" && (
+          <GrokAccountSelect
+            value={selectedXaiAccountId}
+            onChange={(accountId, account) => {
+              setSelectedXaiAccountId(accountId);
+              // 新增时名字还是预设名：带上账号，几张官方卡一眼能分清
+              if (!initialData) {
+                const current = form.getValues("name").trim();
+                const presetName = grokBuildOfficialPreset.name;
+                if (
+                  current === presetName ||
+                  current.startsWith(`${presetName} (`)
+                ) {
+                  form.setValue(
+                    "name",
+                    account ? `${presetName} (${account.login})` : presetName,
+                  );
+                }
+              }
+            }}
+            onManageAccounts={
+              onManageAuthAccounts
+                ? () => onManageAuthAccounts("xai_oauth")
+                : undefined
+            }
+          />
+        )}
 
         {category !== "official" && (
           <>

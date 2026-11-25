@@ -1,0 +1,33 @@
+{
+  "version": "4.0.4001",
+  "items": [
+    {
+      "type": "new",
+      "zh": "Grok 官方卡可绑定授权中心的 xAI 账号，多账号切换",
+      "zh-TW": "Grok 官方卡可綁定授權中心的 xAI 帳號，多帳號切換",
+      "en": "Bind Grok Official cards to xAI accounts and switch between them",
+      "ja": "Grok 公式カードに xAI アカウントを紐付けて切り替え可能に"
+    },
+    {
+      "type": "new",
+      "zh": "插件页支持 Antigravity CLI",
+      "zh-TW": "外掛頁支援 Antigravity CLI",
+      "en": "The Plugins page now supports Antigravity CLI",
+      "ja": "プラグイン画面が Antigravity CLI に対応"
+    },
+    {
+      "type": "new",
+      "zh": "用量统计按供应商和模型显示缓存命中率",
+      "zh-TW": "用量統計按供應商和模型顯示快取命中率",
+      "en": "See the cache hit rate per provider and per model in usage stats",
+      "ja": "使用量でプロバイダー別・モデル別のキャッシュヒット率を表示"
+    },
+    {
+      "type": "improve",
+      "zh": "加快本地路由和会话搜索，修复流式请求故障转移延迟",
+      "zh-TW": "加快本機路由和工作階段搜尋，修正串流請求容錯移轉延遲",
+      "en": "Faster routing and session search, with earlier failover for stalled streams",
+      "ja": "ルーティングと会話検索を高速化し、ストリーム停止時の切り替えを改善"
+    }
+  ]
+}

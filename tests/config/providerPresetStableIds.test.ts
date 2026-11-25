@@ -58,6 +58,7 @@ const catalogs: Array<{
       "OpenAI API",
       "TokenPlus",
       "Genesis",
+      "StringAI",
     ],
   },
   {
@@ -96,6 +97,7 @@ const catalogs: Array<{
       "OpenAI API",
       "ClinePass",
       "TokenPlus",
+      "StringAI",
     ],
   },
   {
@@ -136,6 +138,7 @@ const catalogs: Array<{
       "ClinePass",
       "Genesis",
       "TokenPlus",
+      "StringAI",
     ],
   },
   {
@@ -172,6 +175,7 @@ const catalogs: Array<{
       "Micu",
       "DMXAPI",
       "SudoCode.chat",
+      "StringAI",
     ],
   },
   {
@@ -231,6 +235,7 @@ const catalogs: Array<{
       "TeamoRouter Claude",
       "ClinePass",
       "TokenPlus",
+      "StringAI",
     ],
   },
   {
@@ -269,6 +274,7 @@ const catalogs: Array<{
       "TeamoRouter Claude",
       "ClinePass",
       "TokenPlus",
+      "StringAI",
     ],
   },
   {
@@ -307,6 +313,7 @@ const catalogs: Array<{
       "OpenAI API",
       "ClinePass",
       "TokenPlus",
+      "StringAI",
     ],
   },
   {
@@ -346,6 +353,7 @@ const catalogs: Array<{
       "TokenPlus",
       "Genesis",
       "Mistral AI",
+      "StringAI",
     ],
   },
 ];

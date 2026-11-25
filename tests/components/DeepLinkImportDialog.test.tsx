@@ -14,7 +14,6 @@ import {
 } from "@tanstack/react-query";
 import { Profiler } from "react";
 import { DeepLinkImportDialog } from "@/components/DeepLinkImportDialog";
-import { deeplinkApi } from "@/lib/api/deeplink";
 import { http, HttpResponse } from "msw";
 import i18n from "i18next";
 import { emitTauriEvent } from "../msw/tauriMocks";
@@ -22,6 +21,7 @@ import { server } from "../msw/server";
 import { peekPendingDeepLink, setPendingDeepLink } from "../msw/state";
 import { pngDataUri } from "../fixtures/customIcon";
 import { toast } from "@/lib/toast";
+import { deeplinkApi } from "@/lib/api/deeplink";
 
 // jsdom 没有 canvas，重新编码这一步换成可控的假实现
 const { normalizeIconDataUri } = vi.hoisted(() => ({
@@ -551,6 +551,55 @@ describe("DeepLinkImportDialog", () => {
     ).not.toBeInTheDocument();
     expect(screen.queryByText("脚本代码")).not.toBeInTheDocument();
   });
+
+  it.each([
+    {
+      usageBaseUrl: "http://127.0.0.1:15721",
+      expectedRisk: "deeplink.risk.privateEndpoint",
+    },
+    {
+      usageBaseUrl: "http://192.168.1.10:8080",
+      expectedRisk: "deeplink.risk.privateEndpoint",
+    },
+    {
+      usageBaseUrl: "http://169.254.169.254/latest/meta-data",
+      expectedRisk: "deeplink.risk.privateEndpoint",
+    },
+    {
+      usageBaseUrl: "https://usage.example.com",
+      expectedRisk: null,
+    },
+  ])(
+    "classifies usageBaseUrl=$usageBaseUrl risk as $expectedRisk",
+    async ({ usageBaseUrl, expectedRisk }) => {
+      render(<DeepLinkImportDialog />, { wrapper: Wrapper });
+
+      act(() => {
+        deliverDeepLink({
+          version: "v1",
+          resource: "provider",
+          app: "claude",
+          name: "Usage Endpoint Risk Provider",
+          homepage: "https://example.com",
+          endpoint: "https://api.example.com",
+          apiKey: "sk-provider-key",
+          usageScript: btoa("({ request: { url: '{{baseUrl}}/v1' } })"),
+          usageBaseUrl,
+        });
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText(usageBaseUrl)).toBeInTheDocument();
+      });
+      if (expectedRisk) {
+        expect(screen.getByText(expectedRisk)).toBeInTheDocument();
+      } else {
+        expect(
+          screen.queryByText("deeplink.risk.privateEndpoint"),
+        ).not.toBeInTheDocument();
+      }
+    },
+  );
 
   // 自定义脚本只有明确 usageEnabled=true 才启用，缺省仍须用户主动开启。
   it.each(
@@ -1265,6 +1314,47 @@ describe("DeepLinkImportDialog", () => {
       await waitFor(() => expect(dialog).toHaveAttribute("data-open", "false"));
       expect(imported).toEqual(["First Provider", "Second Provider"]);
     });
+  });
+
+  it("skips confirmation dialog when config merge fails", async () => {
+    const failure = vi.spyOn(toast, "error");
+    const ackSpy = vi.spyOn(deeplinkApi, "ackPendingDeeplink");
+    server.use(
+      http.post("http://tauri.local/merge_deeplink_config", () =>
+        HttpResponse.json({ message: "Merge failed" }, { status: 500 }),
+      ),
+    );
+
+    try {
+      render(<DeepLinkImportDialog />, { wrapper: Wrapper });
+
+      act(() => {
+        deliverDeepLink({
+          version: "v1",
+          resource: "provider",
+          app: "claude",
+          name: "Bad Merge",
+          endpoint: "https://api.example.com",
+          apiKey: "sk-provider-key",
+          config: btoa('{"env":{}}'),
+        });
+      });
+
+      await waitFor(() => expect(failure).toHaveBeenCalledTimes(1));
+      await waitFor(() => expect(ackSpy).toHaveBeenCalledTimes(1));
+      await waitFor(() => expect(peekPendingDeepLink()).toBeNull());
+
+      expect(failure).toHaveBeenCalledWith("deeplink.configMergeError", {
+        description: expect.stringContaining("Merge failed"),
+      });
+      const dialog = screen.getByTestId("deeplink-dialog");
+      expect(dialog).toHaveAttribute("data-open", "false");
+      expect(screen.queryByRole("heading")).not.toBeInTheDocument();
+      expect(screen.queryByText("Bad Merge")).not.toBeInTheDocument();
+    } finally {
+      failure.mockRestore();
+      ackSpy.mockRestore();
+    }
   });
 });
 

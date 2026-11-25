@@ -1153,4 +1153,25 @@ export const geminiProviderPresets: GeminiProviderPreset[] = [
     ],
     icon: "sudocode",
   },
+  {
+    name: "StringAI",
+    websiteUrl: "https://www.string.ink",
+    apiKeyUrl: "https://www.string.ink/register?ref=661AE533A60AF110",
+    // 原生 /v1beta 回 Google 格式的 401（2026-11-23）；可用的 Gemini 型号随
+    // Key 所属分组而定，未用真 Key 验证
+    settingsConfig: {
+      env: {
+        GOOGLE_GEMINI_BASE_URL: "https://www.string.ink",
+        GEMINI_API_KEY: "",
+        GEMINI_MODEL: "gemini-3.8-flash",
+      },
+    },
+    baseURL: "https://www.string.ink",
+    model: "gemini-3.8-flash",
+    description: "StringAI",
+    category: "aggregator",
+    isPartner: true,
+    partnerPromotionKey: "stringai",
+    icon: "stringai",
+  },
 ];

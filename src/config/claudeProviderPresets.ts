@@ -3372,4 +3372,19 @@ export const providerPresets: ProviderPreset[] = [
     icon: "genesis",
     apiFormat: "openai_chat",
   },
+  {
+    name: "StringAI",
+    websiteUrl: "https://www.string.ink",
+    apiKeyUrl: "https://www.string.ink/register?ref=661AE533A60AF110",
+    settingsConfig: {
+      env: {
+        ANTHROPIC_BASE_URL: "https://www.string.ink",
+        ANTHROPIC_AUTH_TOKEN: "",
+      },
+    },
+    category: "aggregator",
+    isPartner: true,
+    partnerPromotionKey: "stringai",
+    icon: "stringai",
+  },
 ];
