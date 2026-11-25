@@ -91,6 +91,7 @@ fn snapshot_desktop_files(home: &Path) -> Vec<(PathBuf, Vec<u8>)> {
     files
 }
 
+#[cfg(any(target_os = "macos", windows))]
 fn desktop_profile(home: &Path) -> Value {
     let (_, threep) = desktop_config_dirs(home);
     let library = threep.join("configLibrary");
