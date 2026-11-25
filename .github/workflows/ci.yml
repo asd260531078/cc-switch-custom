@@ -326,7 +326,7 @@ jobs:
       # 省掉独立 Windows VM、缓存恢复和重复编译；PR 仅在命中 wsl 闭包时触发，push/定时/手动必跑。
       - name: Setup WSL2
         if: runner.os == 'Windows' && (github.event_name != 'pull_request' || needs.changes.outputs.wsl == 'true')
-        uses: Vampire/setup-wsl@d1da7f2c0322a5ee4f24975344f67fc0f5baf364 # v7
+        uses: Vampire/setup-wsl@4c48163d9f981914dd8caa0fc335fe19cca5bff4 # v7
         with:
           distribution: Ubuntu-24.04
           wsl-version: 2
