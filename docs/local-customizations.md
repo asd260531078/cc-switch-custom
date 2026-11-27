@@ -5,11 +5,19 @@
 - 本项目仓库：[asd260531078/cc-switch-custom](https://github.com/asd260531078/cc-switch-custom)。`origin` 用于本项目上传；官方仓库为 `farion1231/cc-switch`，同步时按官方标签抓取并核实，不将其作为推送目标。
 - 仓库初始化时仅有 Apache 2.0 许可证，其[原始记录](https://github.com/asd260531078/cc-switch-custom/blob/186fdb999d30a77aa95106bd05f7e5758004299c/LICENSE)保留在 Git 历史中；合入官方源码后，根目录 `LICENSE` 沿用官方 MIT 及原版权声明。
 - 上游唯一基线：[farion1231/cc-switch](https://github.com/farion1231/cc-switch)。本地起点为官方 `v3.20.2` / `f3b18df12007d0fd79fd8ad8d310880664015197`，分支 `codex/fix-claude-desktop-deeplink`。
-- 当前源码合入官方正式版 `v4.0.40` / `f19a9d4f4f08bda03106a7be87c77cbcdf55b019`，定制版本为 `4.0.4002`。[本版更新说明](release-notes/v4.0.4002-zh.md) · [当前公开的定制安装包](https://github.com/asd260531078/cc-switch-custom/releases/latest)
+- 当前源码合入官方正式版 `v4.0.43` / `754fed72d428c66c1e6ed45f38601ac25ded90c6`，定制版本为 `4.0.4301`。[本版更新说明](release-notes/v4.0.4301-zh.md) · [当前公开的定制安装包](https://github.com/asd260531078/cc-switch-custom/releases/latest)
 - 官方优先、定制最小化：保留目录、接口、配置与业务行为；优先复用官方能力，不做无关重构、格式化或依赖升级。按功能维护可独立撤销的差异。
 - 每次修复或同步前重新检查最新稳定版、相关提交和 PR 状态，区分已发布、已合并、未合并。先验证需求、配置和数据兼容，再让官方接管；部分覆盖时只保留未覆盖部分。不能因名称相同或发生冲突就删掉必要行为。
 - 冲突逐项按功能解决，不整文件覆盖。涉及实际用户数据时先备份并明确迁移、回滚。同步后更新本表、删除失效兼容代码，再执行对应回归；不保证未经验证的未来版本兼容。
 - 历史版本的上传与构建发布授权只适用于对应发布任务；本次官方同步不自动授权推送、发布、安装或改动真实用户配置。
+
+## UPSTREAM-4.0.43 授权中心、工具管理与深链
+
+合入官方 v4.0.41 至 v4.0.43 的 62 个提交。采用 CodeBuddy、Copilot Auto、官方账号额度自动查询开关、托盘 Antigravity 账号切换、OpenCode 2 工具管理，以及 Codex 直连切换与会话读取修复。旧账户设置沿用原有的自动查询默认值。
+
+合并前的本地修改单独保存在 `4ad71ea0`。Claude Code 终端沿用供应商自带的模型菜单，Claude Desktop 深链和表单保留模型列表及各档选择，Codex、Gemini 和 Grok Build 表单保留导入模型候选。保留 Desktop/Pi 仅导入与显式启用、Codex 认证、网站 Logo、既有预设顺序和本仓库签名更新通道。
+
+SQLite schema 升至 28，以缺列才补的方式增加 CodeBuddy 的 MCP 和 Skills 开关，原有应用开关继续保留。[升级与回退说明](release-notes/v4.0.4301-zh.md)
 
 ## UPSTREAM-4.0.40 账号、插件和本地数据库
 
