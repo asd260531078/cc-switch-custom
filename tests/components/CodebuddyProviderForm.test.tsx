@@ -481,15 +481,17 @@ describe("CodebuddyProviderForm", () => {
       ).not.toBeInTheDocument();
       expect(screen.queryByLabelText("API Key")).not.toBeInTheDocument();
       const alice = await screen.findByRole("radio", { name: /alice/ });
-      await waitFor(() =>
-        expect(alice).toHaveAttribute("aria-checked", "true"),
-      );
-      expect(screen.getByLabelText("provider.name")).toHaveValue("alice");
+      await waitFor(() => {
+        expect(alice).toHaveAttribute("aria-checked", "true");
+        expect(screen.getByLabelText("provider.name")).toHaveValue("alice");
+      });
       expect(screen.getByText("CodeBuddy 在用")).toBeInTheDocument();
 
       // 换成 bob，名字跟着换
       fireEvent.click(screen.getByRole("radio", { name: /bob/ }));
-      expect(screen.getByLabelText("provider.name")).toHaveValue("bob");
+      await waitFor(() =>
+        expect(screen.getByLabelText("provider.name")).toHaveValue("bob"),
+      );
       const save = screen.getByRole("button", { name: "Add" });
       await waitFor(() => expect(save).toBeEnabled());
       fireEvent.click(save);

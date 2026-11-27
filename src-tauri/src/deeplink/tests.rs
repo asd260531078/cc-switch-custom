@@ -456,11 +456,18 @@ fn group_catalog_is_preserved_in_each_clients_model_format() {
             "modelsJson",
             r#"["group/second,variant","example-model","group/second,variant"]"#,
         );
-        let request = parse_deeplink_url(url.as_str()).unwrap();
+        let parsed = parse_deeplink_url(url.as_str());
+        if app == AppType::Codebuddy {
+            let error = parsed.expect_err("CodeBuddy providers are added through its own page");
+            assert!(error.to_string().contains("Invalid provider app type"));
+            continue;
+        }
+        let request = parsed.unwrap();
         let provider = super::provider::build_provider_from_request(&app, &request).unwrap();
         let config = &provider.settings_config;
         let second = "group/second,variant";
         match app {
+            AppType::Codebuddy => unreachable!("CodeBuddy provider links are rejected above"),
             AppType::Claude => {
                 assert_eq!(config["modelPicker"]["options"][1]["model"], second);
                 assert!(crate::mode::stack::claude_models("test", &provider)
