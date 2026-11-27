@@ -556,6 +556,7 @@ export function GrokBuildProviderForm({
               onCustomEndpointsChange={setDraftCustomEndpoints}
               autoSelect={endpointAutoSelect}
               onAutoSelectChange={setEndpointAutoSelect}
+              importedModelIds={initialData?.meta?.importedModelIds}
               codexModel={upstreamModel}
               onModelChange={(value) => {
                 setUpstreamModel(value);

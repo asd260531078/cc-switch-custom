@@ -155,6 +155,7 @@ export function resolveCopilotReportedPromptLimit(
 
 interface CodexFormFieldsProps {
   appId?: AppId;
+  importedModelIds?: string[];
   providerId?: string;
   isCopilotPreset?: boolean;
   isCopilotAuthenticated?: boolean;
@@ -640,6 +641,7 @@ function ReasoningLevelsEditor({
 
 export function CodexFormFields({
   appId = "codex",
+  importedModelIds,
   providerId,
   isCopilotPreset,
   isCopilotAuthenticated,
@@ -1289,13 +1291,19 @@ export function CodexFormFields({
         }),
       });
     }
+    for (const id of importedModelIds ?? []) {
+      if (!seen.has(id)) {
+        seen.add(id);
+        suggestions.push({ id, ownedBy: null });
+      }
+    }
     for (const model of fetchedModels) {
       if (seen.has(model.id)) continue;
       seen.add(model.id);
       suggestions.push(model);
     }
     return suggestions;
-  }, [catalogRows, fetchedModels, t]);
+  }, [catalogRows, fetchedModels, importedModelIds, t]);
 
   // 填了映射时才提示"默认模型不在映射中"（无映射的供应商本来就直接请求任意模型名）
   const isDefaultModelOutsideCatalog =

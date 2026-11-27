@@ -50,6 +50,26 @@ describe("Antigravity model discovery", () => {
     api.getAgyModels.mockResolvedValue([{ id: "Gemini 3.8 Flash (Low)" }]);
   });
 
+  it.each(["gemini", "agy"] as const)(
+    "switches %s to another imported model without fetching",
+    async (appId) => {
+      const onModelChange = vi.fn();
+      render(
+        <Harness
+          appId={appId}
+          model="primary"
+          importedModelIds={["primary", "alternate"]}
+          onModelChange={onModelChange}
+        />,
+      );
+      fireEvent.click(screen.getByRole("button", { name: "Select model" }));
+      fireEvent.click(await screen.findByRole("option", { name: "alternate" }));
+      expect(onModelChange).toHaveBeenCalledWith("alternate");
+      expect(api.fetchModelsForConfig).not.toHaveBeenCalled();
+      expect(api.getAgyModels).not.toHaveBeenCalled();
+    },
+  );
+
   // agy 的 API Key 模式只认它内置清单里的显示名，Gemini 接口的模型 ID 用不了
   it("asks agy's API-key mode instead of the Gemini models API", async () => {
     render(<Harness />);

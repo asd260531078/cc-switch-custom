@@ -661,6 +661,16 @@ fn direct_inference_model_specs(provider: &Provider) -> Result<Vec<InferenceMode
             .then_with(|| b.supports_1m.cmp(&a.supports_1m))
     });
     result.dedup_by(|a, b| a.name == b.name);
+    if let Some(primary) = provider
+        .meta
+        .as_ref()
+        .and_then(|meta| meta.imported_model_ids.first())
+    {
+        let primary = strip_one_m_suffix_for_route_lookup(primary);
+        if let Some(index) = result.iter().position(|spec| spec.name == primary) {
+            result[..=index].rotate_right(1);
+        }
+    }
     Ok(result)
 }
 
@@ -762,6 +772,38 @@ pub(crate) fn configured_proxy_model_routes(
         ));
     }
 
+    // Desktop's native menu needs Claude-shaped IDs. Keep role entries first and
+    // give each additional imported model a stable ID across edits and reordering.
+    if let Some(meta) = provider
+        .meta
+        .as_ref()
+        .filter(|meta| meta.claude_desktop_mode == Some(ClaudeDesktopMode::Proxy))
+    {
+        let mut seen: std::collections::HashSet<_> = result
+            .iter()
+            .map(|route| route.upstream_model.clone())
+            .collect();
+        let mut used_ids: std::collections::HashSet<_> =
+            result.iter().map(|route| route.route_id.clone()).collect();
+        used_ids.extend(reserved_route_ids);
+        for id in &meta.imported_model_ids {
+            let upstream = strip_one_m_suffix_for_route_lookup(id);
+            if upstream.is_empty() || !seen.insert(upstream.to_owned()) {
+                continue;
+            }
+            let hash = crate::live::engine::sha256_hex(upstream.as_bytes());
+            let mut route_id = format!("claude-sonnet-5-r{}", &hash[..16]);
+            while !used_ids.insert(route_id.clone()) {
+                route_id.push('r');
+            }
+            result.push(ResolvedModelRoute {
+                route_id,
+                upstream_model: upstream.to_owned(),
+                label_override: Some(upstream.to_owned()),
+                supports_1m: upstream != id.trim(),
+            });
+        }
+    }
     Ok(result)
 }
 
@@ -2079,6 +2121,14 @@ mod tests {
                 "claude-fable-1-0",
                 "claude-haiku-4-5",
             ]
+        );
+
+        // Imports explicitly select their default, even when its tier sorts last.
+        provider.meta.as_mut().unwrap().imported_model_ids =
+            vec!["claude-haiku-4-5".into(), "claude-opus-4-3".into()];
+        assert_eq!(
+            direct_profile(&provider).unwrap()["inferenceModels"][0],
+            "claude-haiku-4-5"
         );
     }
 

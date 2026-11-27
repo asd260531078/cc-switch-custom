@@ -148,19 +148,23 @@ fn parse_provider_deeplink(
     }
 
     // Extract optional fields
-    let model = params.get("model").cloned();
-    let models = if app == "codex" {
-        params.get("models").map(|value| {
-            value
-                .split(',')
+    // CSV is the original Codex format. The JSON form also preserves model IDs containing commas.
+    let models: Option<Vec<String>> = match params.get("modelsJson") {
+        Some(raw) => Some(serde_json::from_str(raw).map_err(|_| {
+            AppError::InvalidInput("modelsJson must be a list of model IDs".into())
+        })?),
+        None => params.get("models").map(|raw| {
+            raw.split(',')
                 .map(str::trim)
-                .filter(|model| !model.is_empty())
-                .map(str::to_string)
+                .filter(|id| !id.is_empty())
+                .map(str::to_owned)
                 .collect()
-        })
-    } else {
-        None
+        }),
     };
+    let model = params
+        .get("model")
+        .cloned()
+        .or_else(|| models.as_ref()?.first().cloned());
     // 这几家的节点没有模型就选不到任何模型（见 `provider::build_pi_family_settings`）；
     // WorkBuddy 的卡至少要一个模型才能保存
     if matches!(app.as_str(), "mcode" | "kimi" | "dsh" | "omp" | "workbuddy")

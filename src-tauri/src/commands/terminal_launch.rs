@@ -225,13 +225,25 @@ pub async fn open_provider_terminal(
                         log::warn!("计算终端要挡住的 live 键失败，按原样启动: {e}");
                         Default::default()
                     });
-                    claude_terminal_launch(&env_vars, &providerId, &provider.name, &drops)?
+                    claude_terminal_launch(
+                        &env_vars,
+                        &providerId,
+                        &provider.name,
+                        provider.settings_config.get("modelPicker"),
+                        &drops,
+                    )?
                 }
             }
         }
         _ => {
             let env_vars = extract_env_vars_from_config(&provider.settings_config, &app_type);
-            claude_terminal_launch(&env_vars, &providerId, &provider.name, &Default::default())?
+            claude_terminal_launch(
+                &env_vars,
+                &providerId,
+                &provider.name,
+                None,
+                &Default::default(),
+            )?
         }
     };
     if skipPermissions == Some(true) {
@@ -602,10 +614,11 @@ fn claude_terminal_launch(
     env_vars: &[(String, String)],
     provider_id: &str,
     provider_name: &str,
+    picker: Option<&serde_json::Value>,
     drops: &crate::services::provider::SwitchDrops,
 ) -> Result<ProviderLaunch, String> {
     let config_file = unique_temp_path(&format!("claude_{provider_id}"), "json");
-    write_claude_config(&config_file, env_vars, provider_name, drops)?;
+    write_claude_config(&config_file, env_vars, provider_name, picker, drops)?;
     let config_name = config_file
         .file_name()
         .map(|name| name.to_string_lossy().into_owned())
@@ -1097,6 +1110,7 @@ fn write_claude_config(
     config_file: &std::path::Path,
     env_vars: &[(String, String)],
     provider_name: &str,
+    picker: Option<&serde_json::Value>,
     drops: &crate::services::provider::SwitchDrops,
 ) -> Result<(), String> {
     use serde_json::Value;
@@ -1107,7 +1121,9 @@ fn write_claude_config(
         env_obj.insert(key.clone(), Value::String(value.clone()));
     }
 
-    let model_picker = crate::live::project::claude::terminal_model_picker(&env_obj, provider_name);
+    let model_picker = picker.cloned().unwrap_or_else(|| {
+        crate::live::project::claude::terminal_model_picker(&env_obj, provider_name)
+    });
     for key in drops.env.keys() {
         env_obj
             .entry(key.clone())
@@ -2567,6 +2583,7 @@ mod tests {
             &[("ANTHROPIC_AUTH_TOKEN".into(), "t".into())],
             "p",
             "P",
+            None,
             &Default::default(),
         )
         .unwrap();
@@ -2593,7 +2610,7 @@ mod tests {
                 .map(|(k, v)| (k.to_string(), v.to_string()))
                 .collect();
             let launch =
-                claude_terminal_launch(&env, "p", "DeepSeek", &Default::default()).unwrap();
+                claude_terminal_launch(&env, "p", "DeepSeek", None, &Default::default()).unwrap();
             let file = &launch.cleanup[0];
             let value: serde_json::Value =
                 serde_json::from_str(&std::fs::read_to_string(file).unwrap()).unwrap();
@@ -2664,6 +2681,7 @@ mod tests {
             ],
             "p",
             "DeepSeek",
+            None,
             &drops,
         )
         .unwrap();
@@ -2691,6 +2709,7 @@ mod tests {
             &[("ANTHROPIC_MODEL".into(), "deepseek-v4-pro".into())],
             "p",
             "DeepSeek",
+            None,
             &Default::default(),
         )
         .unwrap();

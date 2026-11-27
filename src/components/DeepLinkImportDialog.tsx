@@ -617,11 +617,10 @@ export function DeepLinkImportDialog() {
                   ) : (
                     <>
                       {/* Codex 和 Gemini 使用通用 model 字段 */}
-                      {(request.model ||
-                        (request.app === "codex" && request.models?.[0])) && (
+                      {(request.model || request.models?.[0]) && (
                         <div className="grid grid-cols-3 items-center gap-4">
                           <div className="font-medium text-sm text-fg-2">
-                            {request.app === "codex" && request.models?.length
+                            {request.models?.length
                               ? t("deeplink.defaultModel")
                               : t("deeplink.model")}
                           </div>
@@ -630,18 +629,17 @@ export function DeepLinkImportDialog() {
                           </div>
                         </div>
                       )}
-                      {request.app === "codex" &&
-                        (request.models?.length ?? 0) > 0 && (
-                          <div className="grid grid-cols-3 items-center gap-4">
-                            <div className="font-medium text-sm text-muted-foreground">
-                              {t("deeplink.models")}
-                            </div>
-                            <div className="col-span-2 min-w-0 break-all text-sm font-mono">
-                              {request.models?.join(", ")}
-                            </div>
-                          </div>
-                        )}
                     </>
+                  )}
+                  {!!request.models?.length && (
+                    <div className="grid grid-cols-3 items-start gap-4">
+                      <div className="font-medium text-sm text-muted-foreground">
+                        {t("deeplink.models")}
+                      </div>
+                      <div className="col-span-2 max-h-32 overflow-y-auto min-w-0 break-all text-sm font-mono">
+                        {request.models.join(", ")}
+                      </div>
+                    </div>
                   )}
 
                   {request.apiFormat && (

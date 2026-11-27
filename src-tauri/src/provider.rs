@@ -545,6 +545,13 @@ impl LocalProxyRequestOverrides {
 /// 供应商元数据
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ProviderMeta {
+    /// Choices retained by editors whose client accepts a single model or fixed role slots.
+    #[serde(
+        default,
+        rename = "importedModelIds",
+        skip_serializing_if = "Vec::is_empty"
+    )]
+    pub imported_model_ids: Vec<String>,
     /// Original website logo URL. Never inferred from a shared API endpoint.
     #[serde(rename = "iconUrl", skip_serializing_if = "Option::is_none")]
     pub icon_url: Option<String>,

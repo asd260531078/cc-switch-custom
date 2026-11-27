@@ -2991,6 +2991,7 @@ function ProviderFormFull({
 
           {usesGeminiStyleForm(appId) && (
             <GeminiFormFields
+              importedModelIds={initialData?.meta?.importedModelIds}
               appId={appId as "gemini" | "agy"}
               providerId={providerId}
               shouldShowApiKey={shouldShowApiKey(

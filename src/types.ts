@@ -179,6 +179,7 @@ export interface LocalProxyRequestOverrides {
 
 // 供应商元数据（字段名与后端一致，保持 snake_case）
 export interface ProviderMeta {
+  importedModelIds?: string[];
   // Optional remote logo source. The renderer only uses the backend-cached data URI.
   iconUrl?: string;
   /** Explicit multiplier for future local-proxy reference costs; absent means 1. */

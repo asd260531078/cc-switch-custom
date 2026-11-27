@@ -34,7 +34,7 @@ export interface DeepLinkImportRequest {
   icon?: string;
   iconUrl?: string;
   model?: string;
-  models?: string[]; // Explicit Codex model catalog
+  models?: string[]; // Explicit provider model catalog
   notes?: string;
   haikuModel?: string;
   sonnetModel?: string;

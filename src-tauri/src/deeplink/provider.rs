@@ -9,7 +9,8 @@ use super::DeepLinkImportRequest;
 use crate::claude_desktop_config::{is_claude_safe_model_id, DEFAULT_PROXY_ROUTES};
 use crate::error::AppError;
 use crate::provider::{
-    ClaudeDesktopMode, ClaudeDesktopModelRoute, Provider, ProviderMeta, UsageScript,
+    ClaudeDesktopMode, ClaudeDesktopModelRoute, ClaudeStackModel, Provider, ProviderMeta,
+    UsageScript,
 };
 use crate::services::ProviderService;
 use crate::store::AppState;
@@ -381,6 +382,17 @@ pub(super) fn check_link_values(
     app_type: &AppType,
     request: &DeepLinkImportRequest,
 ) -> Result<(), AppError> {
+    if let Some(models) = &request.models {
+        if models.iter().any(|id| {
+            id.trim().is_empty()
+                || id.chars().any(char::is_control)
+                || has_dynamic_reference(id, matches!(app_type, AppType::Pi))
+        }) {
+            return Err(AppError::InvalidInput(
+                "Invalid model ID in import catalog".into(),
+            ));
+        }
+    }
     if !app_type.spec().additive {
         return Ok(());
     }
@@ -440,6 +452,22 @@ fn has_dynamic_reference(value: &str, is_pi: bool) -> bool {
         })
 }
 
+/// Keep the chosen model first. A legacy single-model link keeps its original shape.
+fn link_models<'a>(request: &'a DeepLinkImportRequest, primary: &'a str) -> Vec<&'a str> {
+    let mut seen = std::collections::HashSet::new();
+    std::iter::once(primary)
+        .chain(request.models.iter().flatten().map(|id| id.trim()))
+        .filter(|id| !id.is_empty() && seen.insert(*id))
+        .collect()
+}
+
+fn named_model_rows(request: &DeepLinkImportRequest, primary: &str) -> serde_json::Value {
+    link_models(request, primary)
+        .into_iter()
+        .map(|id| json!({ "id": id, "name": id }))
+        .collect()
+}
+
 /// Build a Provider structure from a deep link request
 pub(crate) fn build_provider_from_request(
     app_type: &AppType,
@@ -447,7 +475,7 @@ pub(crate) fn build_provider_from_request(
 ) -> Result<Provider, AppError> {
     let api_format = link_api_format(app_type, request)?;
     check_link_values(app_type, request)?;
-    let settings_config = match app_type {
+    let mut settings_config = match app_type {
         AppType::Claude | AppType::ClaudeDesktop => build_claude_settings(request),
         AppType::Codex => build_codex_settings(request)?,
         AppType::Gemini => build_gemini_settings(request),
@@ -478,6 +506,32 @@ pub(crate) fn build_provider_from_request(
 
     // Build usage script configuration if provided
     let mut meta = build_provider_meta(app_type, request)?;
+    if request.models.as_ref().is_some_and(|ids| !ids.is_empty()) {
+        let ids = link_models(request, request.model.as_deref().unwrap_or_default());
+        match app_type {
+            AppType::Claude => {
+                let options: Vec<_> = ids
+                    .iter()
+                    .map(|id| json!({"model": id, "label": id}))
+                    .collect();
+                settings_config["modelPicker"] =
+                    json!({"replaceBuiltInOptions": true, "options": options});
+                meta.get_or_insert_with(ProviderMeta::default).stack_models = Some(
+                    ids.into_iter()
+                        .map(|id| ClaudeStackModel {
+                            model: id.to_owned(),
+                            ..Default::default()
+                        })
+                        .collect(),
+                );
+            }
+            AppType::Gemini | AppType::Agy | AppType::GrokBuild | AppType::ClaudeDesktop => {
+                meta.get_or_insert_with(ProviderMeta::default)
+                    .imported_model_ids = ids.into_iter().map(str::to_owned).collect();
+            }
+            _ => {}
+        }
+    }
     // Optional presentation metadata must never block configuration import.
     // Direct IPC imports pass the same validation as parsed deep links.
     if let Some(icon_url) = request
@@ -810,8 +864,8 @@ fn fill_claude_desktop_card(
     request: &DeepLinkImportRequest,
     api_format: Option<ApiFormat>,
 ) -> Result<(), AppError> {
-    let parsed = |value: &Option<String>| {
-        let raw = value.as_deref()?.trim();
+    let parsed = |value: &str| {
+        let raw = value.trim();
         let marker = crate::claude_desktop_config::ONE_M_CONTEXT_MARKER;
         let has_1m = raw.len() >= marker.len()
             && raw.as_bytes()[raw.len() - marker.len()..].eq_ignore_ascii_case(marker.as_bytes());
@@ -823,16 +877,19 @@ fn fill_claude_desktop_card(
         (!model.is_empty()).then(|| (model.to_string(), has_1m))
     };
     let format = api_format.unwrap_or(ApiFormat::Anthropic);
-    let models: Vec<(String, bool)> = [
-        &request.model,
-        &request.sonnet_model,
-        &request.opus_model,
-        &request.haiku_model,
+    let mut seen = std::collections::HashSet::new();
+    let models: Vec<_> = [
+        request.model.as_deref(),
+        request.sonnet_model.as_deref(),
+        request.opus_model.as_deref(),
+        request.haiku_model.as_deref(),
     ]
     .into_iter()
+    .flatten()
+    .chain(request.models.iter().flatten().map(String::as_str))
     .filter_map(parsed)
+    .filter(|entry| seen.insert(entry.clone()))
     .collect();
-
     if format == ApiFormat::Anthropic
         && models
             .iter()
@@ -869,9 +926,11 @@ fn fill_claude_desktop_card(
         .iter()
         .map(|route| {
             let tier = match route.env_key {
-                "ANTHROPIC_DEFAULT_SONNET_MODEL" => parsed(&request.sonnet_model),
-                "ANTHROPIC_DEFAULT_OPUS_MODEL" => parsed(&request.opus_model),
-                "ANTHROPIC_DEFAULT_HAIKU_MODEL" => parsed(&request.haiku_model),
+                "ANTHROPIC_DEFAULT_SONNET_MODEL" => {
+                    request.sonnet_model.as_deref().and_then(parsed)
+                }
+                "ANTHROPIC_DEFAULT_OPUS_MODEL" => request.opus_model.as_deref().and_then(parsed),
+                "ANTHROPIC_DEFAULT_HAIKU_MODEL" => request.haiku_model.as_deref().and_then(parsed),
                 _ => None,
             };
             let (upstream, has_1m) = tier.unwrap_or_else(|| primary.clone());
@@ -970,19 +1029,6 @@ fn build_codex_settings(request: &DeepLinkImportRequest) -> Result<serde_json::V
         .unwrap_or("gpt-5-codex")
         .to_string();
 
-    let mut catalog_models = Vec::<String>::new();
-    if let Some(models) = &request.models {
-        for model in models {
-            let model = model.trim();
-            if !model.is_empty() && !catalog_models.iter().any(|entry| entry == model) {
-                catalog_models.push(model.to_string());
-            }
-        }
-        if !catalog_models.is_empty() && !catalog_models.contains(&model_name) {
-            catalog_models.insert(0, model_name.clone());
-        }
-    }
-
     // Endpoint: normalize trailing slashes (use primary endpoint only)
     let endpoint = get_primary_endpoint(request)
         .trim()
@@ -1028,7 +1074,8 @@ requires_openai_auth = false
         },
         "config": config_toml
     });
-    if !catalog_models.is_empty() {
+    if request.models.as_ref().is_some_and(|ids| !ids.is_empty()) {
+        let catalog_models = link_models(request, &model_name);
         settings["modelCatalog"] = json!({
             "models": catalog_models
                 .iter()
@@ -1079,7 +1126,9 @@ fn build_copilot_settings(
     }
     provider.insert(key.into(), json!(value));
 
-    let mut models = vec![json!({"id": model})];
+    let ids = link_models(request, model);
+    let mut seen: std::collections::HashSet<_> = ids.iter().copied().collect();
+    let mut models: Vec<_> = ids.iter().map(|id| json!({"id": id})).collect();
     if config
         .as_ref()
         .and_then(|value| value.get("provider"))
@@ -1089,7 +1138,7 @@ fn build_copilot_settings(
             inline
                 .models
                 .into_iter()
-                .filter(|id| *id != model)
+                .filter(|id| seen.insert(*id))
                 .map(|id| json!({"id": id})),
         );
     }
@@ -1170,7 +1219,9 @@ fn build_opencode_settings(
     // Build models object
     let mut models = serde_json::Map::new();
     if let Some(model) = &request.model {
-        models.insert(model.clone(), json!({ "name": model }));
+        for id in link_models(request, model) {
+            models.insert(id.to_owned(), json!({ "name": id }));
+        }
     }
 
     // Default to openai-compatible npm package
@@ -1205,10 +1256,7 @@ fn build_additive_app_settings(
     );
 
     if let Some(model) = &request.model {
-        config.insert(
-            "models".to_string(),
-            json!([{ "id": model, "name": model }]),
-        );
+        config.insert("models".to_string(), named_model_rows(request, model));
     }
 
     json!(config)
@@ -1252,10 +1300,7 @@ fn build_hermes_settings(
     );
 
     if let Some(model) = &request.model {
-        config.insert(
-            "models".to_string(),
-            json!([{ "id": model, "name": model }]),
-        );
+        config.insert("models".to_string(), named_model_rows(request, model));
     }
 
     json!(config)
@@ -1288,10 +1333,7 @@ fn build_pi_settings(
         "api".to_string(),
         json!(native_protocol(&AppType::Pi, api_format)),
     );
-    config.insert(
-        "models".to_string(),
-        json!([{ "id": model, "name": model }]),
-    );
+    config.insert("models".to_string(), named_model_rows(request, model));
     Ok(json!(config))
 }
 
@@ -1322,6 +1364,10 @@ fn build_custom_provider_settings(
     api_format: Option<ApiFormat>,
 ) -> Result<serde_json::Value, AppError> {
     let model = required_link_model(app_type, request)?;
+    let model_map = link_models(request, model)
+        .into_iter()
+        .map(|id| (id.to_owned(), json!({ "name": id })))
+        .collect::<serde_json::Map<_, _>>();
     Ok(json!({
         "name": request.name.clone().unwrap_or_default(),
         "kind": "custom",
@@ -1331,7 +1377,7 @@ fn build_custom_provider_settings(
             "baseURL": get_primary_endpoint(request),
             "apiKey": request.api_key.clone().unwrap_or_default(),
         },
-        "models": { model: { "name": model } },
+        "models": model_map,
     }))
 }
 
@@ -1342,11 +1388,15 @@ fn build_workbuddy_settings(
     request: &DeepLinkImportRequest,
 ) -> Result<serde_json::Value, AppError> {
     let model = required_link_model(&AppType::WorkBuddy, request)?;
+    let model_cards = link_models(request, model)
+        .into_iter()
+        .map(|id| json!({ "id": id, "supportsToolCall": true }))
+        .collect::<Vec<_>>();
     Ok(json!({
         "vendor": request.name.clone().unwrap_or_default(),
         "url": get_primary_endpoint(request),
         "apiKey": normalize_deeplink_api_key(request.api_key.as_deref().unwrap_or_default()),
-        "models": [{ "id": model, "supportsToolCall": true }],
+        "models": model_cards,
     }))
 }
 
@@ -1361,19 +1411,16 @@ fn build_kimi_settings(
 ) -> Result<serde_json::Value, AppError> {
     let model = required_link_model(&AppType::Kimi, request)?;
     // 模型键先用模型名，定下供应商 id 后由 `namespace_kimi_models` 加前缀。
+    let model_map = link_models(request, model).into_iter().map(|id| (id.to_owned(), json!({
+            "model": id, "max_context_size": KIMI_LINK_CONTEXT_SIZE, "capabilities": ["tool_use"]
+        }))).collect::<serde_json::Map<_, _>>();
     Ok(json!({
         "provider": {
             "type": native_protocol(&AppType::Kimi, api_format),
             "base_url": get_primary_endpoint(request),
             "api_key": request.api_key.clone().unwrap_or_default(),
         },
-        "models": {
-            model: {
-                "model": model,
-                "max_context_size": KIMI_LINK_CONTEXT_SIZE,
-                "capabilities": ["tool_use"],
-            }
-        },
+        "models": model_map,
     }))
 }
 
@@ -1391,7 +1438,7 @@ fn namespace_kimi_models(settings: &mut serde_json::Value, id: &str) {
     }
 }
 
-/// Oh My Pi 的 models.yml 节点：和 Pi 一样只写一个模型，但没有 `name` 字段（显示名在 CC Switch）。
+/// Oh My Pi 的 models.yml 供应商节点。
 fn build_omp_settings(
     request: &DeepLinkImportRequest,
     api_format: Option<ApiFormat>,
@@ -1401,7 +1448,7 @@ fn build_omp_settings(
         "baseUrl": get_primary_endpoint(request),
         "apiKey": request.api_key.clone().unwrap_or_default(),
         "api": native_protocol(&AppType::Omp, api_format),
-        "models": [{ "id": model, "name": model }],
+        "models": named_model_rows(request, model),
     }))
 }
 

@@ -270,6 +270,7 @@ context_window = 250000
           name: "Existing Relay",
           settingsConfig: { config },
           meta: {
+            importedModelIds: ["grok-upstream", "alternate"],
             custom_endpoints: {
               "https://deleted.example.com/v1": {
                 url: "https://deleted.example.com/v1",
@@ -289,9 +290,21 @@ context_window = 250000
       container.querySelector<HTMLInputElement>("#codexBaseUrl")?.value,
     ).toBe("https://existing.example.com/v1");
 
+    Element.prototype.scrollIntoView ??= vi.fn();
+    await user.click(
+      screen.getAllByRole("button", { name: "Select model" })[0],
+    );
+    await user.click(await screen.findByRole("option", { name: "alternate" }));
     await user.click(screen.getByRole("button", { name: "Save" }));
 
     expect(onSubmit).toHaveBeenCalledTimes(1);
+    expect(
+      JSON.parse(onSubmit.mock.calls[0][0].settingsConfig).config,
+    ).toContain('model = "alternate"');
+    expect(onSubmit.mock.calls[0][0].meta.importedModelIds).toEqual([
+      "grok-upstream",
+      "alternate",
+    ]);
     expect(onSubmit.mock.calls[0][0].meta.custom_endpoints).toBeUndefined();
   });
 

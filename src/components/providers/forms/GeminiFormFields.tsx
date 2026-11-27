@@ -21,6 +21,7 @@ interface EndpointCandidate {
 
 interface GeminiFormFieldsProps {
   appId?: "gemini" | "agy";
+  importedModelIds?: string[];
   providerId?: string;
   // API Key
   shouldShowApiKey: boolean;
@@ -53,6 +54,7 @@ interface GeminiFormFieldsProps {
 
 export function GeminiFormFields({
   appId = "gemini",
+  importedModelIds,
   providerId,
   shouldShowApiKey,
   apiKey,
@@ -77,7 +79,9 @@ export function GeminiFormFields({
 }: GeminiFormFieldsProps) {
   const { t } = useTranslation();
 
-  const [fetchedModels, setFetchedModels] = useState<FetchedModel[]>([]);
+  const [fetchedModels, setFetchedModels] = useState<FetchedModel[]>(() =>
+    (importedModelIds ?? []).map((id) => ({ id, ownedBy: null })),
+  );
   const [isFetchingModels, setIsFetchingModels] = useState(false);
 
   const handleFetchModels = useCallback(() => {

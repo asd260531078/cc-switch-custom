@@ -123,7 +123,7 @@ pub struct DeepLinkImportRequest {
     /// Optional model name
     #[serde(skip_serializing_if = "Option::is_none")]
     pub model: Option<String>,
-    /// Explicit Codex model catalog from the link (separate from the default model)
+    /// Explicit provider model catalog from the link (separate from the default model)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub models: Option<Vec<String>>,
     /// Optional notes/description

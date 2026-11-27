@@ -1377,6 +1377,7 @@ it("previews agy model and masks its key before confirmation", async () => {
       resource: "provider",
       app: "agy",
       name: "Agy fixture",
+      models: ["agy-preview-model", "agy-alternate"],
       endpoint: "https://relay.example",
       apiKey: "secret-agy-key",
       config: btoa(
@@ -1388,8 +1389,11 @@ it("previews agy model and masks its key before confirmation", async () => {
     });
   });
   await waitFor(() =>
-    expect(screen.getByText("agy-preview-model")).toBeInTheDocument(),
+    expect(screen.getAllByText("agy-preview-model").length).toBeGreaterThan(0),
   );
+  expect(
+    screen.getByText("agy-preview-model, agy-alternate"),
+  ).toBeInTheDocument();
   expect(screen.queryByText("secret-agy-key")).not.toBeInTheDocument();
   expect(screen.getAllByText("secr************").length).toBeGreaterThan(0);
 });

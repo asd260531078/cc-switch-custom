@@ -595,7 +595,14 @@ export function ClaudeDesktopProviderForm({
   const managedModelsRequestRef = useRef(0);
   useEffect(() => {
     managedModelsRequestRef.current += 1;
-    setFetchedModels([]);
+    setFetchedModels(
+      usesManagedOAuth
+        ? []
+        : (initialData?.meta?.importedModelIds ?? []).map((id) => ({
+            id,
+            ownedBy: null,
+          })),
+    );
     setIsFetchingModels(false);
   }, [
     usesManagedOAuth,
@@ -603,6 +610,7 @@ export function ClaudeDesktopProviderForm({
     selectedGitHubAccountId,
     selectedCodexAccountId,
     selectedXaiAccountId,
+    initialData?.meta?.importedModelIds,
   ]);
 
   const handleFetchManagedModels = async () => {

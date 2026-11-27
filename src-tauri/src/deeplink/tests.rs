@@ -449,6 +449,67 @@ fn codex_deeplink_imports_explicit_model_list_without_changing_legacy_links() {
 }
 
 #[test]
+fn group_catalog_is_preserved_in_each_clients_model_format() {
+    for app in AppType::all() {
+        let mut url = url::Url::parse(&provider_link(app.as_str(), None)).unwrap();
+        url.query_pairs_mut().append_pair(
+            "modelsJson",
+            r#"["group/second,variant","example-model","group/second,variant"]"#,
+        );
+        let request = parse_deeplink_url(url.as_str()).unwrap();
+        let provider = super::provider::build_provider_from_request(&app, &request).unwrap();
+        let config = &provider.settings_config;
+        let second = "group/second,variant";
+        match app {
+            AppType::Claude => {
+                assert_eq!(config["modelPicker"]["options"][1]["model"], second);
+                assert!(crate::mode::stack::claude_models("test", &provider)
+                    .iter()
+                    .any(|entry| entry.upstream == second));
+            }
+            AppType::Codex => assert_eq!(config["modelCatalog"]["models"][1]["model"], second),
+            AppType::Dsh | AppType::Mcode | AppType::OpenCode => {
+                assert_eq!(config["models"].as_object().unwrap().len(), 2);
+                assert_eq!(config["models"][second]["name"], second);
+            }
+            AppType::Kimi => assert_eq!(config["models"][second]["model"], second),
+            AppType::WorkBuddy
+            | AppType::Omp
+            | AppType::OpenClaw
+            | AppType::Hermes
+            | AppType::Pi
+            | AppType::Copilot => {
+                let rows = config["models"].as_array().unwrap();
+                assert_eq!(rows.len(), 2);
+                assert_eq!(rows[0]["id"], "example-model");
+                assert_eq!(rows[1]["id"], second);
+            }
+            AppType::ClaudeDesktop | AppType::Gemini | AppType::GrokBuild | AppType::Agy => {
+                if app == AppType::ClaudeDesktop {
+                    let routes =
+                        crate::claude_desktop_config::proxy_model_routes(&provider).unwrap();
+                    let extra = routes
+                        .iter()
+                        .find(|route| route.upstream_model == second)
+                        .unwrap();
+                    assert_eq!(extra.label_override.as_deref(), Some(second));
+                    let mapped = crate::claude_desktop_config::map_proxy_request_model(
+                        serde_json::json!({"model": extra.route_id}),
+                        &provider,
+                    )
+                    .unwrap();
+                    assert_eq!(mapped["model"], second);
+                }
+                assert_eq!(
+                    provider.meta.unwrap().imported_model_ids,
+                    ["example-model", second]
+                );
+            }
+        }
+    }
+}
+
+#[test]
 fn codex_deeplink_keeps_model_list_from_inline_config() {
     use super::provider::build_provider_from_request;
 
@@ -2801,6 +2862,7 @@ fn claude_desktop_link_with_non_anthropic_format_needs_a_model() {
 fn import_pi_family_link(app: &str, api_format: Option<&str>) -> (AppState, String) {
     let name: String = url::form_urlencoded::byte_serialize("中转_Relay".as_bytes()).collect();
     let url = provider_link(app, api_format).replace("name=Example", &format!("name={name}"));
+    let url = format!("{url}&models=example-model,alternate-model");
     let request = parse_deeplink_url(&url).expect("parse link");
     let db = Arc::new(Database::memory().expect("create memory db"));
     let state = AppState::new(db);
@@ -2909,6 +2971,7 @@ fn test_dsh_link_is_added_to_every_profile() {
         .unwrap();
         assert!(patch.contains(&format!("{id}:")), "{profile}: {patch}");
         assert!(patch.contains("id: example-model"), "{profile}: {patch}");
+        assert!(patch.contains("id: alternate-model"), "{profile}");
         assert!(
             patch.contains("api: anthropic-messages"),
             "{profile}: {patch}"
